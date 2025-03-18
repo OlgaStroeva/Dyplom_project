@@ -1,0 +1,6 @@
+@Dyplom_project_HostAddress = http://localhost:5212
+
+GET {{Dyplom_project_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
