@@ -48,23 +48,24 @@ public class FormControllerTest
         _mockDbContext.Setup(db => db.GetEventByIdAsync(eventId))
             .ReturnsAsync(mockEvent);
 
+        _mockDbContext.Setup(db => db.EventHasFormAsync(eventId))
+            .ReturnsAsync(false);
+
         _mockDbContext.Setup(db => db.CreateFormAsync(eventId))
-            .Returns(Task.CompletedTask);
+            .ReturnsAsync(98765); // Возвращаем сгенерированный ID
 
-        var httpContext = new DefaultHttpContext();
-        httpContext.User = new System.Security.Claims.ClaimsPrincipal(
-            new System.Security.Claims.ClaimsIdentity(
-                new List<System.Security.Claims.Claim> { new System.Security.Claims.Claim("userId", userId.ToString()) },
-                "mock"));
-
-        _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
+        SetupHttpContext(userId);
 
         var result = await _controller.CreateForm(eventId);
         var okResult = result as OkObjectResult;
+        var response = okResult?.Value as dynamic;
 
         Assert.IsNotNull(okResult);
         Assert.AreEqual(200, okResult.StatusCode);
+        Assert.IsNotNull(response);
+        Assert.AreEqual(98765, response.invitationTemplateId); // Проверяем, что ID передался
     }
+
 
     /// <summary>
     /// Тест попытки создания анкеты, если мероприятие не найдено
@@ -86,47 +87,7 @@ public class FormControllerTest
         Assert.IsNotNull(notFoundResult);
         Assert.AreEqual(404, notFoundResult.StatusCode);
     }
-
-    /// <summary>
-    /// Тест успешного добавления участника
-    /// </summary>
-    [TestMethod]
-    public async Task AddParticipant_ShouldReturnOk_WhenSuccessful()
-    {
-        var userId = 1;
-        var formId = 300;
-        var request = new AddParticipantRequest
-        {
-            Data = [new Dictionary<string, string>
-            {
-                { "Email", "test@example.com" },
-                { "Name", "John Doe" }
-            }]
-        };
-
-        var mockEvent = new Event { Id = 101, CreatedBy = userId };
-
-        _mockDbContext.Setup(db => db.GetEventByFormIdAsync(formId))
-            .ReturnsAsync(mockEvent);
-
-        _mockDbContext.Setup(db => db.AddParticipantDataAsync(formId, It.IsAny<List<Dictionary<string, string>>>()))
-            .ReturnsAsync(new List<string>()); // Нет ошибок
-
-        var httpContext = new DefaultHttpContext();
-        httpContext.User = new System.Security.Claims.ClaimsPrincipal(
-            new System.Security.Claims.ClaimsIdentity(
-                new List<System.Security.Claims.Claim> { new System.Security.Claims.Claim("userId", userId.ToString()) },
-                "mock"));
-
-        _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
-
-        var result = await _controller.AddParticipant(formId, request);
-        var okResult = result as OkObjectResult;
-
-        Assert.IsNotNull(okResult);
-        Assert.AreEqual(200, okResult.StatusCode);
-    }
-
+    
     /// <summary>
     /// Тест загрузки списка приглашённых из XLSX
     /// </summary>
@@ -162,4 +123,61 @@ public class FormControllerTest
         Assert.IsNotNull(okResult);
         Assert.AreEqual(200, okResult.StatusCode);
     }
+    
+    [TestMethod]
+    public async Task CreateForm_ShouldReturnBadRequest_WhenFormAlreadyExists()
+    {
+        var userId = 1;
+        var eventId = 100;
+        var mockEvent = new Event { Id = eventId, CreatedBy = userId };
+
+        _mockDbContext.Setup(db => db.GetEventByIdAsync(eventId))
+            .ReturnsAsync(mockEvent);
+
+        _mockDbContext.Setup(db => db.EventHasFormAsync(eventId))
+            .ReturnsAsync(true); // Уже существует анкета
+
+        SetupHttpContext(userId);
+
+        var result = await _controller.CreateForm(eventId);
+        var badRequestResult = result as BadRequestObjectResult;
+
+        Assert.IsNotNull(badRequestResult);
+        Assert.AreEqual(400, badRequestResult.StatusCode);
+    }
+   
+    [TestMethod]
+    public async Task AddParticipant_ShouldReturnOk_WhenSuccessful()
+    {
+        var userId = 1;
+        var formId = 300;
+        var request = new AddParticipantRequest
+        {
+            Data = new List<Dictionary<string, string>>
+            {
+                new Dictionary<string, string>
+                {
+                    { "Email", "test@example.com" },
+                    { "Name", "John Doe" }
+                }
+            }
+        };
+
+        var mockEvent = new Event { Id = 101, CreatedBy = userId };
+
+        _mockDbContext.Setup(db => db.GetEventByFormIdAsync(formId))
+            .ReturnsAsync(mockEvent);
+
+        _mockDbContext.Setup(db => db.AddParticipantDataAsync(formId, It.IsAny<List<Dictionary<string, string>>>()))
+            .ReturnsAsync(new List<string>()); // Нет ошибок
+
+        SetupHttpContext(userId);
+
+        var result = await _controller.AddParticipant(formId, request);
+        var okResult = result as OkObjectResult;
+
+        Assert.IsNotNull(okResult);
+        Assert.AreEqual(200, okResult.StatusCode);
+    }
+
 }

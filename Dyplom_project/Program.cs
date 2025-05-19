@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Dyplom_project.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -53,7 +54,7 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
-
+builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

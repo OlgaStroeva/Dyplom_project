@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "o1bZ+dtjTxE=",
+  "dgSpecHash": "CVUQiIts7fw=",
   "success": true,
   "projectFilePath": "/home/olga/RiderProjects/Dyplom_project/Dyplom_project/Dyplom_project.csproj",
   "expectedPackageFiles": [
@@ -8,11 +8,14 @@
     "/home/olga/.nuget/packages/azure.identity/1.11.4/azure.identity.1.11.4.nupkg.sha512",
     "/home/olga/.nuget/packages/azure.security.keyvault.certificates/4.6.0/azure.security.keyvault.certificates.4.6.0.nupkg.sha512",
     "/home/olga/.nuget/packages/azure.security.keyvault.secrets/4.6.0/azure.security.keyvault.secrets.4.6.0.nupkg.sha512",
+    "/home/olga/.nuget/packages/bcrypt.net-next/4.0.3/bcrypt.net-next.4.0.3.nupkg.sha512",
+    "/home/olga/.nuget/packages/bouncycastle.cryptography/2.5.1/bouncycastle.cryptography.2.5.1.nupkg.sha512",
     "/home/olga/.nuget/packages/closedxml/0.105.0-rc/closedxml.0.105.0-rc.nupkg.sha512",
     "/home/olga/.nuget/packages/closedxml.parser/2.0.0-preview1/closedxml.parser.2.0.0-preview1.nupkg.sha512",
     "/home/olga/.nuget/packages/documentformat.openxml/3.1.1/documentformat.openxml.3.1.1.nupkg.sha512",
     "/home/olga/.nuget/packages/documentformat.openxml.framework/3.1.1/documentformat.openxml.framework.3.1.1.nupkg.sha512",
     "/home/olga/.nuget/packages/excelnumberformat/1.1.0/excelnumberformat.1.1.0.nupkg.sha512",
+    "/home/olga/.nuget/packages/mailkit/4.12.0/mailkit.4.12.0.nupkg.sha512",
     "/home/olga/.nuget/packages/microsoft.aspnetcore.authentication.jwtbearer/8.0.12/microsoft.aspnetcore.authentication.jwtbearer.8.0.12.nupkg.sha512",
     "/home/olga/.nuget/packages/microsoft.aspnetcore.authentication.openidconnect/8.0.12/microsoft.aspnetcore.authentication.openidconnect.8.0.12.nupkg.sha512",
     "/home/olga/.nuget/packages/microsoft.aspnetcore.cryptography.internal/8.0.1/microsoft.aspnetcore.cryptography.internal.8.0.1.nupkg.sha512",
@@ -57,6 +60,7 @@
     "/home/olga/.nuget/packages/microsoft.identitymodel.validators/8.1.0/microsoft.identitymodel.validators.8.1.0.nupkg.sha512",
     "/home/olga/.nuget/packages/microsoft.openapi/1.6.22/microsoft.openapi.1.6.22.nupkg.sha512",
     "/home/olga/.nuget/packages/microsoft.win32.systemevents/10.0.0-preview.1.25080.5/microsoft.win32.systemevents.10.0.0-preview.1.25080.5.nupkg.sha512",
+    "/home/olga/.nuget/packages/mimekit/4.12.0/mimekit.4.12.0.nupkg.sha512",
     "/home/olga/.nuget/packages/neo4j.driver/5.27.0/neo4j.driver.5.27.0.nupkg.sha512",
     "/home/olga/.nuget/packages/neo4j.driver.simple/5.27.0/neo4j.driver.simple.5.27.0.nupkg.sha512",
     "/home/olga/.nuget/packages/rbush.signed/4.0.0/rbush.signed.4.0.0.nupkg.sha512",
@@ -69,14 +73,14 @@
     "/home/olga/.nuget/packages/system.clientmodel/1.0.0/system.clientmodel.1.0.0.nupkg.sha512",
     "/home/olga/.nuget/packages/system.diagnostics.diagnosticsource/8.0.0/system.diagnostics.diagnosticsource.8.0.0.nupkg.sha512",
     "/home/olga/.nuget/packages/system.drawing.common/10.0.0-preview.1.25080.3/system.drawing.common.10.0.0-preview.1.25080.3.nupkg.sha512",
-    "/home/olga/.nuget/packages/system.formats.asn1/8.0.1/system.formats.asn1.8.0.1.nupkg.sha512",
+    "/home/olga/.nuget/packages/system.formats.asn1/8.0.2/system.formats.asn1.8.0.2.nupkg.sha512",
     "/home/olga/.nuget/packages/system.identitymodel.tokens.jwt/8.1.0/system.identitymodel.tokens.jwt.8.1.0.nupkg.sha512",
     "/home/olga/.nuget/packages/system.io.packaging/8.0.1/system.io.packaging.8.0.1.nupkg.sha512",
     "/home/olga/.nuget/packages/system.io.pipelines/7.0.0/system.io.pipelines.7.0.0.nupkg.sha512",
     "/home/olga/.nuget/packages/system.memory/4.5.4/system.memory.4.5.4.nupkg.sha512",
     "/home/olga/.nuget/packages/system.memory.data/1.0.2/system.memory.data.1.0.2.nupkg.sha512",
     "/home/olga/.nuget/packages/system.numerics.vectors/4.5.0/system.numerics.vectors.4.5.0.nupkg.sha512",
-    "/home/olga/.nuget/packages/system.security.cryptography.pkcs/8.0.0/system.security.cryptography.pkcs.8.0.0.nupkg.sha512",
+    "/home/olga/.nuget/packages/system.security.cryptography.pkcs/8.0.1/system.security.cryptography.pkcs.8.0.1.nupkg.sha512",
     "/home/olga/.nuget/packages/system.security.cryptography.protecteddata/4.7.0/system.security.cryptography.protecteddata.4.7.0.nupkg.sha512",
     "/home/olga/.nuget/packages/system.security.cryptography.xml/8.0.1/system.security.cryptography.xml.8.0.1.nupkg.sha512",
     "/home/olga/.nuget/packages/system.text.encodings.web/8.0.0/system.text.encodings.web.8.0.0.nupkg.sha512",
@@ -84,5 +88,16 @@
     "/home/olga/.nuget/packages/system.threading.tasks.extensions/4.5.4/system.threading.tasks.extensions.4.5.4.nupkg.sha512",
     "/home/olga/.nuget/packages/system.valuetuple/4.5.0/system.valuetuple.4.5.0.nupkg.sha512"
   ],
-  "logs": []
+  "logs": [
+    {
+      "code": "NU1902",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Package 'Microsoft.Identity.Web' 3.2.0 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-rpq8-q44m-2rpg",
+      "libraryId": "Microsoft.Identity.Web",
+      "targetGraphs": [
+        "net8.0"
+      ]
+    }
+  ]
 }

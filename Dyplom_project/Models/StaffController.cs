@@ -30,32 +30,41 @@ public class StaffController : ControllerBase
         return Ok(users);
     }
 
-    [HttpPost("assign")]
+    [HttpPost("assign-staff")]
     [Authorize]
-    [SwaggerOperation(Summary = "Назначить сотрудника", Description = "Позволяет организатору назначить пользователя сотрудником мероприятия.")]
-    [SwaggerResponse(200, "Сотрудник назначен")]
-    [SwaggerResponse(401, "Неавторизованный запрос")]
+    [SwaggerOperation(Summary = "Назначить пользователя сотрудником")]
+    [SwaggerResponse(200, "Пользователь назначен сотрудником")]
+    [SwaggerResponse(400, "Пользователь не может быть сотрудником")]
     [SwaggerResponse(403, "Нет прав для назначения")]
     [SwaggerResponse(404, "Мероприятие или пользователь не найден")]
     public async Task<IActionResult> AssignStaff([FromBody] AssignStaffRequest request)
     {
-        
         var userIdClaim = User.FindFirst("userId");
-        if (userIdClaim == null) return Unauthorized();
+        if (userIdClaim == null)
+            return Unauthorized();
 
         int organizerId = int.Parse(userIdClaim.Value);
+
+        // Получаем мероприятие
         var eventData = await _dbContext.GetEventByIdAsync(request.EventId);
+        if (eventData == null)
+            return NotFound(new { message = "Мероприятие не найдено." });
+
         if (eventData.CreatedBy != organizerId)
-        {
             return Forbid();
-        }
 
-        if (eventData == null) return NotFound(new { message = "Мероприятие не найдено." });
+        // Получаем пользователя
+        var user = await _dbContext.GetUserByIdAsync(request.UserId);
+        if (user == null)
+            return NotFound(new { message = "Пользователь не найден." });
 
-        if (eventData.CreatedBy != organizerId) return Forbid();
+        // Проверка: может ли быть сотрудником
+        if (!user.CanBeStaff)
+            return BadRequest(new { message = "Пользователь запретил назначение в роли сотрудника." });
 
-        await _dbContext.AddStaffAsync(request.EventId, request.UserId);
-        return Ok(new { message = "Сотрудник назначен!" });
+        await _dbContext.AssignStaffToEventAsync(request.EventId, request.UserId);
+
+        return Ok(new { message = "Пользователь назначен сотрудником мероприятия." });
     }
 
     [HttpDelete("remove")]

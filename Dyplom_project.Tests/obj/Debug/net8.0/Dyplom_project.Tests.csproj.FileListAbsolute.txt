@@ -235,3 +235,4 @@
 /home/olga/RiderProjects/Dyplom_project/Dyplom_project.Tests/bin/Debug/net8.0/System.Private.Windows.Core.dll
 /home/olga/RiderProjects/Dyplom_project/Dyplom_project.Tests/bin/Debug/net8.0/System.Private.Windows.GdiPlus.dll
 /home/olga/RiderProjects/Dyplom_project/Dyplom_project.Tests/bin/Debug/net8.0/runtimes/win/lib/net8.0/Microsoft.Win32.SystemEvents.dll
+/home/olga/RiderProjects/Dyplom_project/Dyplom_project.Tests/obj/Debug/net8.0/Dyplom_project.Tests.sourcelink.json

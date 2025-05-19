@@ -4,6 +4,8 @@
     <TargetFrameworks>net8.0</TargetFrameworks>
     
     <IsPackable>false</IsPackable>
+    
+    <UserSecretsId>6bd1fa2f-c2f0-4296-b810-ae535ef5c9fb</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

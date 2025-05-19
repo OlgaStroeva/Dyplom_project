@@ -4,10 +4,17 @@ using System.Text;
 
 public class User
 {
-    public int Id { get; set; }  
-    public string Name { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-    public string PasswordHash { get; set; } = string.Empty;
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+    public string Email { get; set; } = "";
+    public string PasswordHash { get; set; } = "";
+    public bool CanBeStaff { get; set; } = true;
+    public bool IsEmailConfirmed { get; set; } = false;
+    public string EmailConfirmationCode { get; set; } = "";
+    public string PasswordResetToken { get; set; } = "";
+    public DateTime? PasswordResetRequestedAt { get; set; }
+    public int PasswordResetAttempts { get; set; } = 0;
+
 
     // Метод для хеширования пароля перед сохранением в БД
     public void SetPassword(string password)

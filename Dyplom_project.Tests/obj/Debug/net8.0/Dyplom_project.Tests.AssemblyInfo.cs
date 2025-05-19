@@ -10,10 +10,11 @@
 using System;
 using System.Reflection;
 
+[assembly: Microsoft.Extensions.Configuration.UserSecrets.UserSecretsIdAttribute("6bd1fa2f-c2f0-4296-b810-ae535ef5c9fb")]
 [assembly: System.Reflection.AssemblyCompanyAttribute("Dyplom_project.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f0e8940d405bf7ca3c1715fbf48bb1f8395252a1")]
 [assembly: System.Reflection.AssemblyProductAttribute("Dyplom_project.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Dyplom_project.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

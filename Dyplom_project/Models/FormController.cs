@@ -22,15 +22,16 @@ public class FormController : ControllerBase
     /// <param name="eventId">ID мероприятия.</param>
     /// <returns>Сообщение об успешном создании.</returns>
     [HttpPost("create/{eventId}")]
+    [Authorize]
     [SwaggerOperation(Summary = "Создать шаблон анкеты", Description = "Создаёт шаблон анкеты с полем Email для мероприятия.")]
     [SwaggerResponse(200, "Шаблон анкеты создан")]
+    [SwaggerResponse(400, "Анкета уже существует")]
     [SwaggerResponse(401, "Неавторизованный запрос")]
     [SwaggerResponse(403, "Нет прав для редактирования")]
     [SwaggerResponse(404, "Мероприятие не найдено")]
     public async Task<IActionResult> CreateForm(int eventId)
     {
         var userIdClaim = User.FindFirst("userId");
-        
         if (userIdClaim == null)
         {
             return Unauthorized(new { message = "Не удалось определить пользователя." });
@@ -38,15 +39,6 @@ public class FormController : ControllerBase
 
         int userId = int.Parse(userIdClaim.Value);
         var eventData = await _dbContext.GetEventByIdAsync(eventId);
-        if (eventData == null) // ✅ Исправляем возможный NullReferenceException
-        {
-            return NotFound(new { message = "Мероприятие не найдено." });
-        }
-
-        if (eventData!.CreatedBy != userId)
-        {
-            return Forbid();
-        }
 
         if (eventData == null)
         {
@@ -58,10 +50,17 @@ public class FormController : ControllerBase
             return Forbid();
         }
 
-        await _dbContext.CreateFormAsync(eventId);
+        if (await _dbContext.EventHasFormAsync(eventId))
+        {
+            return BadRequest(new { message = "Анкета уже существует для данного мероприятия." });
+        }
 
-        return Ok(new { message = "Шаблон анкеты создан!" });
+        int invitationTemplateId = await _dbContext.CreateFormAsync(eventId);
+
+        return Ok(new { message = "Шаблон анкеты создан!", invitationTemplateId });
     }
+
+
     
     /// <summary>
     /// Редактирует шаблон анкеты.
@@ -102,16 +101,27 @@ public class FormController : ControllerBase
     [HttpDelete("delete/{formId}")]
     [SwaggerOperation(Summary = "Удалить шаблон анкеты", Description = "Позволяет удалить шаблон анкеты.")]
     [SwaggerResponse(200, "Шаблон анкеты удалён")]
+    [SwaggerResponse(404, "Шаблон анкеты удалён")]
+    [Authorize]
     public async Task<IActionResult> DeleteForm(int formId)
     {
         var userIdClaim = User.FindFirst("userId");
         if (userIdClaim == null) return Unauthorized();
-    
+
         int userId = int.Parse(userIdClaim.Value);
         var eventData = await _dbContext.GetEventByFormIdAsync(formId);
-        if (eventData == null || eventData.CreatedBy != userId) return Forbid();
-    
-        await _dbContext.DeleteFormAsync(formId);
+
+        if (eventData == null)
+        {
+            return NotFound(new { message = "Анкета или мероприятие не найдено." });
+        }
+
+        if (eventData.CreatedBy != userId)
+        {
+            return Forbid();
+        }
+
+        await _dbContext.DeleteFormAsync(formId, eventData.Id);
         return Ok(new { message = "Шаблон анкеты удалён!" });
     }
 
@@ -146,10 +156,15 @@ public class FormController : ControllerBase
         var eventData = await _dbContext.GetEventByFormIdAsync(formId);
         if (eventData == null) return NotFound(new { message = "Анкета не найдена." });
 
-        await _dbContext.AddParticipantDataAsync(formId, request.Data);
+        var errors = await _dbContext.AddParticipantDataAsync(formId, request.Data);
+        if (errors.Count > 0)
+        {
+            return BadRequest(new { message = "Ошибка в данных.", errors });
+        }
+
         return Ok(new { message = "Участник добавлен!" });
     }
-
+    
     [HttpPost("upload/{formId}")]
     [Authorize]
     [SwaggerOperation(Summary = "Загрузить список приглашённых", Description = "Позволяет загрузить XLSX-файл с данными участников.")]

@@ -67,45 +67,25 @@ public class EventController : ControllerBase
     [SwaggerResponse(401, "Неавторизованный запрос")]
     [SwaggerResponse(403, "Нет прав для редактирования")]
     [SwaggerResponse(404, "Мероприятие не найдено")]
+    [Authorize]
     public async Task<IActionResult> UpdateEvent(int eventId, [FromBody] UpdateEventRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.Description) || request.Description.Length > 10000)
-        {
-            return BadRequest(new { message = "Описание должно содержать до 10 000 символов." });
-        }
-
         var userIdClaim = User.FindFirst("userId");
-        if (userIdClaim == null)
-        {
-            return Unauthorized(new { message = "Не удалось определить пользователя." });
-        }
+        if (userIdClaim == null) return Unauthorized();
 
         int userId = int.Parse(userIdClaim.Value);
+        var eventData = await _dbContext.GetEventByIdAsync(eventId);
 
-        var eventToUpdate = await _dbContext.GetEventByIdAsync(eventId);
-        if (eventToUpdate.CreatedBy != userId)
-        {
-            return Forbid();
-        }
-
-        if (eventToUpdate == null)
-        {
+        if (eventData == null)
             return NotFound(new { message = "Мероприятие не найдено." });
-        }
 
-        if (eventToUpdate.CreatedBy != userId)
-        {
+        if (eventData.CreatedBy != userId)
             return Forbid();
-        }
 
-        eventToUpdate.Description = request.Description;
-        eventToUpdate.ImageUrl = request.ImageUrl;
-        eventToUpdate.InvitationTemplateId = request.InvitationTemplateId;
-
-        await _dbContext.UpdateEventAsync(eventToUpdate);
-
-        return Ok(new { message = "Мероприятие обновлено!" });
+        await _dbContext.UpdateEventAsync(eventId, request);
+        return Ok(new { message = "Информация о мероприятии обновлена." });
     }
+
     
     /// <summary>
     /// Получает мероприятие по ID.
