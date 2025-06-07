@@ -110,4 +110,21 @@ public class StaffController : ControllerBase
         return Ok(new { message = "Мероприятие удалено!" });
     }
 
+    [HttpPut("toggle-can-be-staff/{userId}")]
+    [SwaggerOperation(Summary = "Изменить статус CanBeStaff", Description = "Инвертирует значение CanBeStaff у пользователя.")]
+    [SwaggerResponse(200, "Статус успешно изменён")]
+    public async Task<IActionResult> ToggleCanBeStaff(int userId)
+    {
+        await _dbContext.ToggleCanBeStaffAsync(userId);
+        return Ok(new { message = "Статус CanBeStaff изменён." });
+    }
+
+    [HttpGet("staff/{eventId}")]
+    [Authorize]
+    public async Task<IActionResult> GetEventStaff(int eventId)
+    {
+        var staff = await _dbContext.GetEventStaffAsync(eventId);
+        return Ok(staff);
+    }
+
 }

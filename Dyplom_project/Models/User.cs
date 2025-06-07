@@ -14,23 +14,12 @@ public class User
     public string PasswordResetToken { get; set; } = "";
     public DateTime? PasswordResetRequestedAt { get; set; }
     public int PasswordResetAttempts { get; set; } = 0;
-
-
-    // Метод для хеширования пароля перед сохранением в БД
-    public void SetPassword(string password)
-    {
-        using var sha256 = SHA256.Create();
-        var bytes = Encoding.UTF8.GetBytes(password);
-        var hash = sha256.ComputeHash(bytes);
-        PasswordHash = Convert.ToBase64String(hash);
-    }
+    
 
     // Проверка пароля при логине
     public bool VerifyPassword(string password)
     {
-        using var sha256 = SHA256.Create();
-        var bytes = Encoding.UTF8.GetBytes(password);
-        var hash = sha256.ComputeHash(bytes);
-        return PasswordHash == Convert.ToBase64String(hash);
+        return BCrypt.Net.BCrypt.Verify(password, PasswordHash);
     }
+
 }

@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Security.Claims;
 using JetBrains.Annotations;
 using Microsoft.AspNetCore.Http;
 
@@ -20,114 +21,141 @@ public class EventControllerTest
         _controller = new EventController(_mockDbContext.Object);
     }
 
-    /// <summary>
-    /// Тест успешного получения мероприятия по ID
-    /// </summary>
     [TestMethod]
-    public async Task GetEventById_ShouldReturnEvent_WhenEventExists()
+    public async Task CreateEvent_ShouldReturnOk_WhenSuccessful()
     {
-        var eventId = 123;
-        var mockEvent = new Event
+        var userId = 1;
+        var context = new ControllerContext
         {
-            Id = eventId,
-            Name = "Тестовое мероприятие",
-            Description = "Описание тестового мероприятия",
-            ImageUrl = "https://www.meme-arsenal.com/memes/8b0bb788781f6917098b8bfccc45f5a2.jpg"
+            HttpContext = new DefaultHttpContext()
         };
+        context.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim("userId", userId.ToString())
+        }, "mock"));
 
-        _mockDbContext.Setup(db => db.GetEventByIdAsync(eventId))
-            .ReturnsAsync(mockEvent);
+        var request = new EventRequest { Name = "New Event" };
 
-        var result = await _controller.GetEventById(eventId);
+        _mockDbContext.Setup(x => x.CreateEventAsync(It.IsAny<Event>()))
+            .ReturnsAsync(1);
+
+
+        var controller = new EventController(_mockDbContext.Object) { ControllerContext = context };
+
+        var result = await controller.CreateEvent(request);
         var okResult = result as OkObjectResult;
-        var returnedEvent = okResult?.Value as Event;
 
         Assert.IsNotNull(okResult);
         Assert.AreEqual(200, okResult.StatusCode);
-        Assert.IsNotNull(returnedEvent);
-        Assert.AreEqual(mockEvent.Id, returnedEvent.Id);
-        Assert.AreEqual(mockEvent.Name, returnedEvent.Name);
-        Assert.AreEqual(mockEvent.Description, returnedEvent.Description);
-        Assert.AreEqual(mockEvent.ImageUrl, returnedEvent.ImageUrl);
     }
 
-    /// <summary>
-    /// Тест получения мероприятия, если оно не найдено
-    /// </summary>
+    [TestMethod]
+    public async Task UpdateEvent_ShouldReturnOk_WhenUserIsOwner()
+    {
+        var userId = 1;
+        var eventId = 1;
+        var request = new UpdateEventRequest { Name = "Updated Event" };
+        var context = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext()
+        };
+        context.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim("userId", userId.ToString())
+        }, "mock"));
+        
+        var controller = new EventController(_mockDbContext.Object) { ControllerContext = context };
+
+        _mockDbContext.Setup(x => x.GetEventByIdAsync(eventId))
+            .ReturnsAsync(new Event { Id = eventId, CreatedBy = userId });
+
+        _mockDbContext.Setup(x => x.UpdateEventAsync(It.IsAny<int>(), request))
+            .Returns(Task.CompletedTask);
+
+
+        var result = await controller.UpdateEvent(eventId, request);
+        var okResult = result as OkObjectResult;
+
+        Assert.IsNotNull(okResult);
+        Assert.AreEqual(200, okResult.StatusCode);
+    }
     [TestMethod]
     public async Task GetEventById_ShouldReturnNotFound_WhenEventDoesNotExist()
     {
-        var eventId = 999;
-        _mockDbContext.Setup(db => db.GetEventByIdAsync(eventId))
-            .ReturnsAsync((Event)null);
+        _mockDbContext.Setup(x => x.GetEventByIdAsync(999))
+            .ReturnsAsync((Event?)null);
 
-        var result = await _controller.GetEventById(eventId);
-        var notFoundResult = result as NotFoundObjectResult;
+        var controller = new EventController(_mockDbContext.Object);
+        var result = await controller.GetEventById(999);
 
-        Assert.IsNotNull(notFoundResult);
-        Assert.AreEqual(404, notFoundResult.StatusCode);
+        Assert.IsInstanceOfType(result, typeof(NotFoundObjectResult));
     }
-
-    /// <summary>
-    /// Тест получения мероприятий пользователя
-    /// </summary>
+    
     [TestMethod]
-    public async Task GetUserEvents_ShouldReturnEvents_WhenUserHasEvents()
+    public async Task GetEventById_ShouldReturnOk_WhenEventExists()
+    {
+        _mockDbContext.Setup(x => x.GetEventByIdAsync(1))
+            .ReturnsAsync(new Event { Id = 1, Name = "Sample Event" });
+
+        var controller = new EventController(_mockDbContext.Object);
+        var result = await controller.GetEventById(1);
+
+        Assert.IsInstanceOfType(result, typeof(OkObjectResult));
+    }
+    [TestMethod]
+    public async Task GetUserEvents_ShouldReturnList()
     {
         var userId = 1;
-        var mockEvents = new List<Event>
+        var context = new ControllerContext
         {
-            new Event { Id = 101, Name = "Событие 1", Description = "Описание 1", ImageUrl = "https://www.meme-arsenal.com/memes/1032dd1b48a30455116b43332f27b862.jpg" },
-            new Event { Id = 102, Name = "Событие 2", Description = "Описание 2", ImageUrl = "https://www.meme-arsenal.com/memes/88c1679749eec9f4fe8c7b452b476574.jpg" }
+            HttpContext = new DefaultHttpContext()
         };
+        context.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim("userId", userId.ToString())
+        }, "mock"));
+        
+        var controller = new EventController(_mockDbContext.Object) { ControllerContext = context };
 
-        _mockDbContext.Setup(db => db.GetUserEventsAsync(userId))
-            .ReturnsAsync(mockEvents);
 
-        var httpContext = new DefaultHttpContext();
-        httpContext.User = new System.Security.Claims.ClaimsPrincipal(
-            new System.Security.Claims.ClaimsIdentity(
-                new List<System.Security.Claims.Claim> { new System.Security.Claims.Claim("userId", userId.ToString()) },
-                "mock"));
+        _mockDbContext.Setup(x => x.GetUserEventsAsync(userId))
+            .ReturnsAsync(new List<Event> {
+                new Event { Id = 1, Name = "Event 1", CreatedBy = userId },
+                new Event { Id = 2, Name = "Event 2", CreatedBy = userId }
+            });
 
-        _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
-
-        var result = await _controller.GetUserEvents();
+        var result = await controller.GetUserEvents();
         var okResult = result as OkObjectResult;
-        var returnedEvents = okResult?.Value as List<Event>;
 
         Assert.IsNotNull(okResult);
-        Assert.AreEqual(200, okResult.StatusCode);
-        Assert.IsNotNull(returnedEvents);
-        Assert.AreEqual(2, returnedEvents.Count);
+        var events = okResult.Value as List<Event>;
+        Assert.AreEqual(2, events?.Count);
     }
-
-    /// <summary>
-    /// Тест получения мероприятий пользователя, если у него нет мероприятий
-    /// </summary>
     [TestMethod]
-    public async Task GetUserEvents_ShouldReturnEmptyList_WhenUserHasNoEvents()
+    public async Task UpdateEvent_ShouldReturnForbid_WhenUserIsNotOwner()
     {
-        var userId = 1;
+        var ownerId = 1;
+        var editorId = 2;
+        var eventId = 1;
 
-        _mockDbContext.Setup(db => db.GetUserEventsAsync(userId))
-            .ReturnsAsync(new List<Event>());
+        var context = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext()
+        };
+        context.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim("userId", editorId.ToString())
+        }, "mock"));
+        
+        var controller = new EventController(_mockDbContext.Object) { ControllerContext = context };
 
-        var httpContext = new DefaultHttpContext();
-        httpContext.User = new System.Security.Claims.ClaimsPrincipal(
-            new System.Security.Claims.ClaimsIdentity(
-                new List<System.Security.Claims.Claim> { new System.Security.Claims.Claim("userId", userId.ToString()) },
-                "mock"));
+        _mockDbContext.Setup(x => x.GetEventByIdAsync(eventId))
+            .ReturnsAsync(new Event { Id = eventId, CreatedBy = ownerId });
 
-        _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
+        var request = new UpdateEventRequest { Name = "Attempted Update" };
 
-        var result = await _controller.GetUserEvents();
-        var okResult = result as OkObjectResult;
-        var returnedEvents = okResult?.Value as List<Event>;
-
-        Assert.IsNotNull(okResult);
-        Assert.AreEqual(200, okResult.StatusCode);
-        Assert.IsNotNull(returnedEvents);
-        Assert.AreEqual(0, returnedEvents.Count);
+        var result = await controller.UpdateEvent(eventId, request);
+        Assert.IsInstanceOfType(result, typeof(ForbidResult));
     }
+
 }

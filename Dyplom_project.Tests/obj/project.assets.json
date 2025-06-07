@@ -1777,6 +1777,22 @@
           }
         }
       },
+      "SixLabors.ImageSharp/3.1.9": {
+        "type": "package",
+        "compile": {
+          "lib/net6.0/SixLabors.ImageSharp.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/SixLabors.ImageSharp.dll": {
+            "related": ".xml"
+          }
+        },
+        "build": {
+          "build/_._": {}
+        }
+      },
       "Swashbuckle.AspNetCore/6.6.2": {
         "type": "package",
         "dependencies": {
@@ -2191,6 +2207,7 @@
           "Microsoft.Identity.Web": "3.2.0",
           "Microsoft.Identity.Web.DownstreamApi": "3.2.0",
           "Neo4j.Driver.Simple": "5.27.0",
+          "SixLabors.ImageSharp": "3.1.9",
           "Swashbuckle.AspNetCore": "6.6.2",
           "Swashbuckle.AspNetCore.Annotations": "7.3.1",
           "System.Drawing.Common": "10.0.0-preview.1.25080.3"
@@ -5048,6 +5065,22 @@
         "sixlabors.fonts.1.0.0.nupkg.sha512",
         "sixlabors.fonts.128.png",
         "sixlabors.fonts.nuspec"
+      ]
+    },
+    "SixLabors.ImageSharp/3.1.9": {
+      "sha512": "8yY4Bcxgw5u7xLWFXb2mK4fbX+0JYJ7eyM19n0inj/cgcHAuIAge982Eiy8vTHT9Zow4HvKJaZKRFBhTNFqD4A==",
+      "type": "package",
+      "path": "sixlabors.imagesharp/3.1.9",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE",
+        "build/SixLabors.ImageSharp.props",
+        "lib/net6.0/SixLabors.ImageSharp.dll",
+        "lib/net6.0/SixLabors.ImageSharp.xml",
+        "sixlabors.imagesharp.128.png",
+        "sixlabors.imagesharp.3.1.9.nupkg.sha512",
+        "sixlabors.imagesharp.nuspec"
       ]
     },
     "Swashbuckle.AspNetCore/6.6.2": {

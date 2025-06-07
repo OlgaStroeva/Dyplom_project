@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using System.Drawing;
 using System.Drawing.Imaging;
+using SixLabors.ImageSharp;
+using Image = SixLabors.ImageSharp.Image;
 
 [Route("api/forms")]
 [ApiController]
@@ -29,7 +31,7 @@ public class FormController : ControllerBase
     [SwaggerResponse(401, "Неавторизованный запрос")]
     [SwaggerResponse(403, "Нет прав для редактирования")]
     [SwaggerResponse(404, "Мероприятие не найдено")]
-    public async Task<IActionResult> CreateForm(int eventId)
+    public virtual async Task<IActionResult> CreateForm(int eventId)
     {
         var userIdClaim = User.FindFirst("userId");
         if (userIdClaim == null)
@@ -68,42 +70,42 @@ public class FormController : ControllerBase
     /// <param name="formId">ID шаблона анкеты.</param>
     /// <param name="request">Список новых полей.</param>
     /// <returns>Сообщение об успешном редактировании.</returns>
-    [HttpPut("update/{formId}")]
+    [HttpPut("update-form/{formId}")]
     [SwaggerOperation(Summary = "Редактировать шаблон анкеты", Description = "Позволяет добавить или удалить поля в анкете.")]
     [SwaggerResponse(200, "Шаблон анкеты обновлён")]
     [SwaggerResponse(401, "Неавторизованный запрос")]
-    public async Task<IActionResult> UpdateForm(int formId, [FromBody] FormRequest request)
+    public virtual async Task<IActionResult> UpdateForm(int formId, [FromBody] FormRequest request)
     {
         var userIdClaim = User.FindFirst("userId");
         if (userIdClaim == null)
         {
             return Unauthorized(new { message = "Не удалось определить пользователя." });
         }
-        var eventData = await _dbContext.GetEventByFormIdAsync(formId); 
+
         int userId = int.Parse(userIdClaim.Value);
+        var eventData = await _dbContext.GetEventByFormIdAsync(formId); 
         if (eventData == null || eventData.CreatedBy != userId)
         {
             return Forbid();
         }
 
-
-        if (!request.Fields.Contains("Email"))
+        if (!request.Fields.Any(f => f.Name == "Email" && f.Type.ToLower() == "email"))
         {
-            return BadRequest(new { message = "Поле Email обязательно." });
+            return BadRequest(new { message = "Поле Email обязательно и должно иметь тип 'email'." });
         }
 
         await _dbContext.UpdateFormAsync(formId, request.Fields);
 
         return Ok(new { message = "Шаблон анкеты обновлён!" });
     }
-    
+
     
     [HttpDelete("delete/{formId}")]
     [SwaggerOperation(Summary = "Удалить шаблон анкеты", Description = "Позволяет удалить шаблон анкеты.")]
     [SwaggerResponse(200, "Шаблон анкеты удалён")]
     [SwaggerResponse(404, "Шаблон анкеты удалён")]
     [Authorize]
-    public async Task<IActionResult> DeleteForm(int formId)
+    public virtual async Task<IActionResult> DeleteForm(int formId)
     {
         var userIdClaim = User.FindFirst("userId");
         if (userIdClaim == null) return Unauthorized();
@@ -151,7 +153,7 @@ public class FormController : ControllerBase
     public async Task<IActionResult> AddParticipant(int formId, [FromBody] AddParticipantRequest request)
     {
         var userIdClaim = User.FindFirst("userId");
-        if (userIdClaim == null) return Unauthorized();
+        if (userIdClaim == null) return Unauthorized("");
 
         var eventData = await _dbContext.GetEventByFormIdAsync(formId);
         if (eventData == null) return NotFound(new { message = "Анкета не найдена." });
@@ -165,6 +167,33 @@ public class FormController : ControllerBase
         return Ok(new { message = "Участник добавлен!" });
     }
     
+    
+    [HttpGet("participants/{eventId}")]
+    [Authorize]
+    public async Task<IActionResult> GetParticipants(int eventId)
+    {
+        var participants = await _dbContext.GetParticipantsByEventIdAsync(eventId);
+        return Ok(participants);
+    }
+    
+    [HttpDelete("participants/{participantId}")]
+    [Authorize]
+    public async Task<IActionResult> CancelParticipant(int participantId)
+    {
+        await _dbContext.DeleteParticipantAsync(participantId);
+        return Ok(new { message = "Приглашённый удалён." });
+    }
+    
+    [HttpPut("participant/{formId}/{participantId}/attendance")]
+    public async Task<IActionResult> UpdateAttendance(int formId, int participantId, [FromBody] bool attended)
+    {
+        var success = await _dbContext.UpdateParticipantAttendanceAsync(formId, participantId, attended);
+        if (!success) return NotFound(new { message = "Участник не найден или не связан с анкетой." });
+
+        return Ok(new { message = "Статус посещения успешно обновлён." });
+    }
+
+
     [HttpPost("upload/{formId}")]
     [Authorize]
     [SwaggerOperation(Summary = "Загрузить список приглашённых", Description = "Позволяет загрузить XLSX-файл с данными участников.")]
@@ -191,23 +220,59 @@ public class FormController : ControllerBase
     [SwaggerResponse(200, "QR-код добавлен")]
     [SwaggerResponse(400, "Некорректное изображение")]
     [SwaggerResponse(404, "Участник не найден")]
+    [HttpPost("participant/{participantId}/qr")]
     public async Task<IActionResult> AddQrCodeToParticipant(int participantId, IFormFile file)
     {
-        if (file == null || file.Length == 0) return BadRequest(new { message = "Файл не загружен." });
+        if (file == null || file.Length == 0)
+            return BadRequest(new { message = "Файл не загружен." });
 
-        using var memoryStream = new MemoryStream();
-        await file.CopyToAsync(memoryStream);
-    
-        using var image = Image.FromStream(memoryStream);
+        using var inputStream = file.OpenReadStream();
+        using var image = await Image.LoadAsync(inputStream); // ✅ кроссплатформенно
         using var outputStream = new MemoryStream();
-        image.Save(outputStream, ImageFormat.Png);
-    
+
+        await image.SaveAsPngAsync(outputStream); // ✅ сохраняем как PNG
         string qrCodeBase64 = Convert.ToBase64String(outputStream.ToArray());
 
         bool updated = await _dbContext.AddQrCodeToParticipantAsync(participantId, qrCodeBase64);
-        if (!updated) return NotFound(new { message = "Участник не найден." });
+        if (!updated)
+            return NotFound(new { message = "Участник не найден." });
 
         return Ok(new { message = "QR-код добавлен!" });
     }
 
+
+    [HttpGet("get-by-event/{eventId}")]
+    [SwaggerOperation(Summary = "Получить шаблон анкеты", Description = "Возвращает шаблон анкеты по ID мероприятия.")]
+    [SwaggerResponse(200, "Шаблон анкеты найден", typeof(Form))]
+    [SwaggerResponse(404, "Мероприятие или анкета не найдены")]
+    public async Task<IActionResult> GetFormByEventId(int eventId)
+    {
+        var form = await _dbContext.GetFormByEventIdAsync(eventId);
+        return form == null
+            ? NotFound(new { message = "Анкета не найдена для указанного мероприятия." })
+            : Ok(form);
+    }
+    
+    [HttpGet("my-templates")]
+    [Authorize]
+    public async Task<IActionResult> GetMyTemplates()
+    {
+        var userIdClaim = User.FindFirst("userId");
+        if (userIdClaim == null) return Unauthorized();
+
+        int userId = int.Parse(userIdClaim.Value);
+        var forms = await _dbContext.GetAvailableFormsByUserIdAsync(userId);
+
+        return Ok(forms);
+    }
+
+    [HttpPut("update/{participantId}")]
+    [SwaggerOperation(Summary = "Обновить данные участника", Description = "Изменяет данные участника по ID.")]
+    [SwaggerResponse(200, "Данные обновлены")]
+    [SwaggerResponse(404, "Участник не найден")]
+    public async Task<IActionResult> UpdateParticipantData(int participantId, [FromBody] UpdateParticipantRequest request)
+    {
+        await _dbContext.UpdateParticipantDataAsync(participantId, request.Data);
+        return Ok(new { message = "Данные участника обновлены." });
+    }
 }

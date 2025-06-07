@@ -25,8 +25,18 @@ public class ApplicationDbContext : IDisposable
         await session.WriteTransactionAsync(async tx =>
         {
             await tx.RunAsync(
-                "CREATE (u:User {id: $id, name: $name, email: $email, password: $password})",
-                new { id = user.Id, name = user.Name, email = user.Email, password = user.PasswordHash }
+                "CREATE (u:User {id: $id, name: $name," +
+                " email: $email," +
+                " password: $password, " +
+                "emailConfirmationCode: $code," +
+                "isEmailConfirmed : $isEmailConfirmed," +
+                "canBeStaff : $CanBeStaff})",
+                new { id = user.Id, name = user.Name, 
+                    email = user.Email, password = user.PasswordHash, 
+                    code = user.EmailConfirmationCode,
+                    isEmailConfirmed = false,
+                    CanBeStaff = true
+                }
             );
         });
     }
@@ -56,13 +66,81 @@ public class ApplicationDbContext : IDisposable
         };
     }
     
+    public virtual async Task<List<ParticipantData>> GetParticipantsByEventIdAsync(int eventId)
+    {
+        await using var session = _driver.AsyncSession();
+        var result = await session.RunAsync(
+            @"MATCH (:Event {id: $eventId})-[:HAS_FORM]->(f:Form)
+          MATCH (f)-[:HAS_PARTICIPANT_DATA]->(p:ParticipantData)
+          RETURN p.id AS id, p.data AS data",
+            new { eventId });
+
+        var records = await result.ToListAsync();
+        return records.Select(r => new ParticipantData
+        {
+            Id = r["id"].As<int>(),
+            Data = r["data"].As<Dictionary<string, object>>()
+                .ToDictionary(k => k.Key, v => v.Value?.ToString() ?? ""),
+            Attended = r.ContainsKey("attended") && r["attended"].As<bool>()
+        }).ToList();
+    }
+    
+    public async Task<bool> UpdateParticipantAttendanceAsync(int formId, int participantId, bool attended)
+    {
+        await using var session = _driver.AsyncSession();
+        var result = await session.RunAsync(
+            @"MATCH (:Form {id: $formId})-[:HAS_PARTICIPANT_DATA]->(p:ParticipantData {id: $participantId})
+          SET p.attended = $attended
+          RETURN p",
+            new { formId, participantId, attended });
+
+        var record = (await result.ToListAsync()).FirstOrDefault();
+        return record != null;
+    }
+
+
+    
+    public async Task DeleteParticipantAsync(int participantId)
+    {
+        await using var session = _driver.AsyncSession();
+        await session.WriteTransactionAsync(async tx =>
+        {
+            await tx.RunAsync(
+                @"MATCH (p:ParticipantData {id: $participantId})
+              DETACH DELETE p",
+                new { participantId });
+        });
+    }
+
+    public virtual async Task<List<User>> GetEventStaffAsync(int eventId)
+    {
+        await using var session = _driver.AsyncSession();
+        var result = await session.RunAsync(
+            @"MATCH (:Event {id: $eventId})<-[:STAFF_FOR]-(u:User)
+          RETURN u",
+            new { eventId });
+
+        var records = await result.ToListAsync();
+        return records.Select(r =>
+        {
+            var node = r["u"].As<INode>();
+            return new User
+            {
+                Id = node.Properties["id"].As<int>(),
+                Name = node.Properties["name"].As<string>(),
+                Email = node.Properties["email"].As<string>()
+            };
+        }).ToList();
+    }
+
     public virtual async Task<User?> GetUserByEmailAsync(string email)
     {
         await using var session = _driver!.AsyncSession();
         return await session.ReadTransactionAsync(async tx =>
         {
             var result = await tx.RunAsync(
-                @"MATCH (u:User {email: $email}) RETURN u.id AS id, u.name AS name, u.email AS email, u.password AS password",
+                @"MATCH (u:User {email: $email}) RETURN u.id AS id, u.name AS name, 
+                        u.email AS email, u.password AS password, u.isEmailConfirmed AS isEmailConfirmed",
                 new { email }
             );
 
@@ -73,7 +151,8 @@ public class ApplicationDbContext : IDisposable
                 Id = record["id"].As<int>(),
                 Name = record["name"].As<string>(),
                 Email = record["email"].As<string>(),
-                PasswordHash = record["password"].As<string>()
+                PasswordHash = record["password"].As<string>(),
+                IsEmailConfirmed = record["isEmailConfirmed"].As<bool>()
             };
         });
     }
@@ -83,7 +162,7 @@ public class ApplicationDbContext : IDisposable
         _driver?.Dispose();
     }
     
-    public async Task<Event?> GetEventByIdAsync(int eventId)
+    public virtual async Task<Event?> GetEventByIdAsync(int eventId)
     {
         await using var session = _driver.AsyncSession();
         var result = await session.RunAsync(
@@ -109,7 +188,7 @@ public class ApplicationDbContext : IDisposable
         };
     }
     
-    public async Task<List<Event>> GetUserEventsAsync(int userId)
+    public virtual async Task<List<Event>> GetUserEventsAsync(int userId)
     {
         await using var session = _driver.AsyncSession();
         var result = await session.RunAsync(
@@ -141,7 +220,7 @@ public class ApplicationDbContext : IDisposable
     }
 
 
-    public async Task<int> CreateEventAsync(Event evt)
+    public virtual async Task<int> CreateEventAsync(Event evt)
     {
         evt.Id = new Random().Next(10000, 99999);
 
@@ -158,7 +237,8 @@ public class ApplicationDbContext : IDisposable
                 dateTime: $dateTime,
                 category: $category,
                 location: $location,
-                createdBy: $userId
+                createdBy: $userId,
+                Status : $status
               })
               CREATE (u)-[:CREATED]->(e)",
                 new
@@ -170,14 +250,15 @@ public class ApplicationDbContext : IDisposable
                     dateTime = evt.DateTime,
                     category = evt.Category,
                     location = evt.Location,
-                    userId = evt.CreatedBy
+                    userId = evt.CreatedBy,
+                    status = evt.Status
                 });
         });
 
         return evt.Id;
     }
 
-    public async Task UpdateEventAsync(int eventId, UpdateEventRequest request)
+    public virtual async Task UpdateEventAsync(int eventId, UpdateEventRequest request)
     {
         await using var session = _driver.AsyncSession();
         await session.WriteTransactionAsync(async tx =>
@@ -189,16 +270,18 @@ public class ApplicationDbContext : IDisposable
                   e.imageBase64 = $imageBase64,
                   e.dateTime = $dateTime,
                   e.category = $category,
-                  e.location = $location",
+                  e.location = $location,
+                  e.status = $status",
                 new
                 {
                     eventId,
-                    name = request.Name ?? "",
+                    name = request.Name,
                     description = request.Description ?? "",
                     imageBase64 = request.ImageBase64 ?? "",
                     dateTime = request.DateTime ?? "",
                     category = request.Category ?? "",
-                    location = request.Location ?? ""
+                    location = request.Location ?? "",
+                    status = request.Status ?? ""
                 });
         });
     }
@@ -214,12 +297,21 @@ public class ApplicationDbContext : IDisposable
         return record["count"].As<int>() > 0;
     }
 
-    public async Task<int> CreateFormAsync(int eventId)
+    public virtual async Task<int> CreateFormAsync(int eventId)
     {
         if (await EventHasFormAsync(eventId))
             throw new InvalidOperationException("У мероприятия уже есть анкета.");
 
-        int invitationTemplateId = new Random().Next(10000, 99999);
+        int formId = new Random().Next(10000, 99999);
+
+        var defaultFields = new List<Dictionary<string, string>>
+        {
+            new()
+            {
+                { "label", "Email" },
+                { "type", "email" }
+            }
+        };
 
         await using var session = _driver.AsyncSession();
         await session.WriteTransactionAsync(async tx =>
@@ -227,28 +319,37 @@ public class ApplicationDbContext : IDisposable
             await tx.RunAsync(
                 @"
             MATCH (e:Event {id: $eventId})
-            CREATE (f:Form {id: $formId, eventId: $eventId, fields: ['Email']})
+            CREATE (f:Form {id: $formId, eventId: $eventId, fields: $fields})
             CREATE (e)-[:HAS_FORM]->(f)
             SET e.invitationTemplateId = $formId
             ",
-                new { formId = invitationTemplateId, eventId = eventId }
-            );
+                new
+                {
+                    eventId,
+                    formId,
+                    fields = defaultFields
+                });
         });
 
-        return invitationTemplateId;
+        return formId;
     }
 
-
-    public virtual async Task UpdateFormAsync(int formId, List<string> fields)
+    public virtual async Task UpdateFormAsync(int formId, List<FormField> updatedFields)
     {
-        if (await FormHasParticipantsAsync(formId))
-            throw new InvalidOperationException("Нельзя редактировать анкету, так как она содержит данные участников.");
-
         await using var session = _driver.AsyncSession();
         await session.WriteTransactionAsync(async tx =>
         {
+            var fields = updatedFields.Select(f => new Dictionary<string, object>
+            {
+                { "name", f.Name },
+                { "type", f.Type }
+            }).ToList();
+
             await tx.RunAsync(
-                @"MATCH (f:Form {id: $formId}) SET f.fields = $fields",
+                @"
+            MATCH (f:Form {id: $formId})
+            SET f.fields = $fields
+            ",
                 new { formId, fields }
             );
         });
@@ -292,7 +393,8 @@ public class ApplicationDbContext : IDisposable
           WHERE u.email CONTAINS $emailPart AND u.canBeStaff = true
           RETURN u.id AS id,
                  u.name AS name,
-                 u.email AS email",
+                 u.email AS email,
+                 u.isEmailConfirmed AS isEmailConfirmed",
             new { emailPart }
         );
 
@@ -302,7 +404,8 @@ public class ApplicationDbContext : IDisposable
         {
             Id = r["id"].As<int>(),
             Name = r["name"].As<string>(),
-            Email = r["email"].As<string>()
+            Email = r["email"].As<string>(),
+            IsEmailConfirmed = r["isEmailConfirmed"].As<bool>(),
         }).ToList();
     }
 
@@ -359,14 +462,14 @@ public class ApplicationDbContext : IDisposable
         });
     }
 
-    public async Task<Event?> GetEventByFormIdAsync(int formId)
+    public virtual async Task<Event?> GetEventByFormIdAsync(int formId)
     {
         await using var session = _driver.AsyncSession();
         return await session.ReadTransactionAsync(async tx =>
         {
             var result = await tx.RunAsync(
                 @"MATCH (e:Event)-[:HAS_FORM]->(f:Form {id: $formId}) 
-              RETURN e.id AS id, e.name AS name, e.createdBy AS createdBy",
+              RETURN e.id AS id, e.name AS name, e.description AS description, e.imageBase64 AS imageBase64, e.createdBy AS createdBy, e.dateTime AS dateTime, e.category as category, e.location AS location, e.status AS status",
                 new { formId }
             );
 
@@ -377,7 +480,14 @@ public class ApplicationDbContext : IDisposable
             {
                 Id = record["id"].As<int>(),
                 Name = record["name"].As<string>(),
-                CreatedBy = record["createdBy"].As<int>()
+                Description = record ["description"].As<string>(),
+                ImageBase64 = record["imageBase64"].As<string>(),
+                CreatedBy = record["createdBy"].As<int>(),
+
+                DateTime = record["dateTime"].As<string>(),
+                Category =  record["category"].As<string>(),
+                Location =  record["location"].As<string>(),
+                Status =  record["status"].As<string>()
             };
         });
     }
@@ -435,7 +545,8 @@ public class ApplicationDbContext : IDisposable
             @"MATCH (u:User {emailConfirmationCode: $code}) 
           RETURN u.id AS id, u.name AS name, u.email AS email, 
                  u.passwordHash AS passwordHash, u.canBeStaff AS canBeStaff,
-                 u.isEmailConfirmed AS isEmailConfirmed, u.emailConfirmationCode AS emailConfirmationCode",
+                 u.isEmailConfirmed AS isEmailConfirmed,
+                 u.emailConfirmationCode AS emailConfirmationCode",
             new { code }
         );
 
@@ -447,7 +558,7 @@ public class ApplicationDbContext : IDisposable
             Email = record["email"].As<string>(),
             PasswordHash = record["passwordHash"].As<string>(),
             CanBeStaff = record["canBeStaff"].As<bool>(),
-            IsEmailConfirmed = record["isEmailConfirmed"].As<bool>(),
+            IsEmailConfirmed = record["isEmailConfirmed"] == null ? false : record["isEmailConfirmed"].As<bool>(),
             EmailConfirmationCode = record["emailConfirmationCode"].As<string>()
         };
     }
@@ -458,38 +569,46 @@ public class ApplicationDbContext : IDisposable
         var result = await session.RunAsync(
             @"MATCH (e:Event {id: $eventId})-[:HAS_FORM]->(f:Form)
           RETURN f.id AS id, f.fields AS fields",
-            new { eventId }
-        );
+            new { eventId });
 
         var record = (await result.ToListAsync()).FirstOrDefault();
         if (record == null) return null;
+
+        var rawFields = record["fields"];
+        var fields = new List<FormField>();
+
+        if (rawFields is List<object> fieldList)
+        {
+            foreach (var item in fieldList)
+            {
+                if (item is IDictionary<string, object> dict &&
+                    dict.TryGetValue("name", out var name) &&
+                    dict.TryGetValue("type", out var type))
+                {
+                    fields.Add(new FormField
+                    {
+                        Name = name?.ToString() ?? "",
+                        Type = type?.ToString() ?? ""
+                    });
+                }
+                else if (item is string legacyName) // старый формат
+                {
+                    fields.Add(new FormField
+                    {
+                        Name = legacyName,
+                        Type = "text"
+                    });
+                }
+            }
+        }
 
         return new Form
         {
             Id = record["id"].As<int>(),
-            Fields = record["fields"].As<List<string>>()
+            Fields = fields
         };
     }
-
-    public async Task<FormTemplate?> GetFormTemplateByIdAsync(int templateId)
-    {
-        await using var session = _driver.AsyncSession();
-        var result = await session.RunAsync(
-            @"MATCH (t:FormTemplate {id: $templateId})
-          RETURN t.id AS id, t.subject AS subject, t.body AS body",
-            new { templateId }
-        );
-
-        var record = (await result.ToListAsync()).FirstOrDefault();
-        if (record == null) return null;
-
-        return new FormTemplate
-        {
-            Id = record["id"].As<int>(),
-            Subject = record["subject"].As<string>(),
-            Body = record["body"].As<string>()
-        };
-    }
+    
 
     
     public async Task UpdateUserAsync(User user)
@@ -502,14 +621,16 @@ public class ApplicationDbContext : IDisposable
               SET u.passwordHash = $passwordHash,
                   u.passwordResetToken = $passwordResetToken,
                   u.passwordResetRequestedAt = $requestedAt,
-                  u.passwordResetAttempts = $attempts",
+                  u.passwordResetAttempts = $attempts,
+                  u.isEmailConfirmed = $isEmailConfirmed",
                 new
                 {
                     id = user.Id,
                     passwordHash = user.PasswordHash,
                     passwordResetToken = user.PasswordResetToken,
                     requestedAt = user.PasswordResetRequestedAt,
-                    attempts = user.PasswordResetAttempts
+                    attempts = user.PasswordResetAttempts,
+                    isEmailConfirmed = user.IsEmailConfirmed
                 });
         });
     }
@@ -536,12 +657,11 @@ public class ApplicationDbContext : IDisposable
     }
 
     
-public async Task<List<string>> AddParticipantDataAsync(int formId, List<Dictionary<string, string>> participants)
+public virtual async Task<List<string>> AddParticipantDataAsync(int formId, List<Dictionary<string, string>> participants)
 {
     var errors = new List<string>();
     var validParticipants = new List<Dictionary<string, string>>();
 
-    // Получаем структуру анкеты
     await using var session = _driver.AsyncSession();
     var formResult = await session.RunAsync(
         @"MATCH (f:Form {id: $formId}) RETURN f.fields AS fields",
@@ -557,37 +677,65 @@ public async Task<List<string>> AddParticipantDataAsync(int formId, List<Diction
         return errors;
     }
 
-    var formFields = formRecord["fields"].As<List<string>>();
+    var formFieldsRaw = formRecord["fields"].As<List<Dictionary<string, object>>>();
+    var fieldNames = formFieldsRaw.Select(f => f["name"].ToString()).ToList();
 
     foreach (var (participant, index) in participants.Select((value, i) => (value, i)))
     {
-        // Проверяем наличие всех полей анкеты в запросе
-        var missingFields = formFields.Except(participant.Keys).ToList();
-        var extraFields = participant.Keys.Except(formFields).ToList();
-
-        if (missingFields.Any())
+        foreach (var field in formFieldsRaw)
         {
-            errors.Add($"Строка {index + 1}: Отсутствуют поля: {string.Join(", ", missingFields)}.");
-            continue;
-        }
+            var fieldName = field["name"].ToString();
+            var fieldType = field["type"].ToString().ToLower();
 
-        if (extraFields.Any())
-        {
-            errors.Add($"Строка {index + 1}: Лишние поля: {string.Join(", ", extraFields)}.");
-            continue;
-        }
+            var value = participant[fieldName];
 
-        // Проверяем email
-        if (!participant.ContainsKey("Email") || !IsValidEmail(participant["Email"]))
-        {
-            errors.Add($"Строка {index + 1}: Некорректный email.");
-            continue;
-        }
+            switch (fieldType)
+            {
+                case "email":
+                    if (!IsValidEmail(value))
+                    {
+                        errors.Add($"Строка {index + 1}: Поле '{fieldName}' содержит некорректный email.");
+                    }
+                    break;
 
+                case "number":
+                    if (!int.TryParse(value, out _))
+                    {
+                        errors.Add($"Строка {index + 1}: Поле '{fieldName}' должно быть числом.");
+                    }
+                    break;
+
+                case "date":
+                    if (!DateTime.TryParse(value, out _))
+                    {
+                        errors.Add($"Строка {index + 1}: Поле '{fieldName}' должно быть датой.");
+                    }
+                    break;
+
+                case "phone":
+                    if (!Regex.IsMatch(value, @"^\+?[0-9\s\-]+$"))
+                    {
+                        errors.Add($"Строка {index + 1}: Поле '{fieldName}' содержит некорректный номер телефона.");
+                    }
+                    break;
+
+                case "text":
+                    // допустим любой непустой текст
+                    if (string.IsNullOrWhiteSpace(value))
+                    {
+                        errors.Add($"Строка {index + 1}: Поле '{fieldName}' не должно быть пустым.");
+                    }
+                    break;
+
+                default:
+                    errors.Add($"Строка {index + 1}: Неизвестный тип поля '{fieldName}'.");
+                    break;
+            }
+        }
+        
         validParticipants.Add(participant);
     }
 
-    // Добавляем только корректных участников
     if (validParticipants.Count > 0)
     {
         await session.WriteTransactionAsync(async tx =>
@@ -598,14 +746,19 @@ public async Task<List<string>> AddParticipantDataAsync(int formId, List<Diction
                     @"MATCH (f:Form {id: $formId})
                       CREATE (p:ParticipantData {id: $participantId, formId: $formId, data: $data})
                       CREATE (f)-[:HAS_PARTICIPANT_DATA]->(p)",
-                    new { formId, participantId = new Random().Next(10000, 99999), data = participant }
-                );
+                    new
+                    {
+                        formId,
+                        participantId = new Random().Next(10000, 99999),
+                        data = participant
+                    });
             }
         });
     }
 
     return errors;
 }
+
 
     public virtual async Task<List<string>> ParseXlsxParticipants(int formId, IFormFile file)
     {
@@ -655,6 +808,53 @@ public async Task<List<string>> AddParticipantDataAsync(int formId, List<Diction
 
         return true;
     }
+    public async Task<List<Form>> GetAvailableFormsByUserIdAsync(int userId)
+    {
+        await using var session = _driver.AsyncSession();
+        var result = await session.RunAsync(
+            @"MATCH (u:User {id: $userId})-[:CREATED]->(e:Event)-[:HAS_FORM]->(f:Form)
+          RETURN f.id AS id, f.fields AS fields",
+            new { userId });
+
+        var records = await result.ToListAsync();
+        
+        return records.Select(record =>
+        {
+            var rawFields = record["fields"];
+            var fields = new List<FormField>();
+
+            if (rawFields is List<object> fieldList)
+            {
+                foreach (var item in fieldList)
+                {
+                    if (item is IDictionary<string, object> dict &&
+                        dict.TryGetValue("name", out var name) &&
+                        dict.TryGetValue("type", out var type))
+                    {
+                        fields.Add(new FormField
+                        {
+                            Name = name?.ToString() ?? "",
+                            Type = type?.ToString() ?? ""
+                        });
+                    }
+                    else if (item is string legacyName) // старый формат
+                    {
+                        fields.Add(new FormField
+                        {
+                            Name = legacyName,
+                            Type = "text"
+                        });
+                    }
+                }
+            }
+
+            return new Form
+            {
+                Id = record["id"].As<int>(),
+                Fields = fields
+            };
+        }).ToList();
+    }
 
     public async Task<List<ParticipantData>> GetAllParticipantDataAsync(int formId)
     {
@@ -671,9 +871,35 @@ public async Task<List<string>> AddParticipantDataAsync(int formId, List<Diction
         return records.Select(r => new ParticipantData
         {
             Id = r["id"].As<int>(),
-            FormId = formId,
-            Data = r["data"].As<Dictionary<string, string>>()
+            Data = r["data"].As<Dictionary<string, object>>()
+                .ToDictionary(k => k.Key, v => v.Value?.ToString() ?? ""),
+            Attended = r.ContainsKey("attended") && r["attended"].As<bool>()
         }).ToList();
+
     }
     
+    public async Task ToggleCanBeStaffAsync(int userId)
+    {
+        await using var session = _driver.AsyncSession();
+        await session.WriteTransactionAsync(async tx =>
+        {
+            await tx.RunAsync(
+                @"MATCH (u:User {id: $userId})
+              SET u.canBeStaff = NOT coalesce(u.canBeStaff, false)",
+                new { userId });
+        });
+    }
+    
+    public async Task UpdateParticipantDataAsync(int participantId, Dictionary<string, string> updatedData)
+    {
+        await using var session = _driver.AsyncSession();
+        await session.WriteTransactionAsync(async tx =>
+        {
+            await tx.RunAsync(
+                @"MATCH (p:ParticipantData {id: $participantId})
+              SET p.data = $updatedData",
+                new { participantId, updatedData });
+        });
+    }
+
 }

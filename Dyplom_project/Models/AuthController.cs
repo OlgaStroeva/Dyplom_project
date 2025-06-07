@@ -1,4 +1,5 @@
 using Dyplom_project.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
@@ -42,6 +43,11 @@ public class AuthController : ControllerBase
             return Unauthorized(new { message = "Неверный email или пароль." });
         }
 
+        if (!user.IsEmailConfirmed)
+        {
+            return Unauthorized(new { message = "Email не подтверждён." });
+        }
+
         var token = _jwtService.GenerateToken(user);
         return Ok(new { token });
     }
@@ -70,7 +76,6 @@ public class AuthController : ControllerBase
 
         return Ok(new { message = "Пароль успешно обновлён." });
     }
-
     
     [HttpPost("request-password-reset")]
     public async Task<IActionResult> RequestPasswordReset([FromBody] PasswordResetRequest request)
@@ -80,14 +85,12 @@ public class AuthController : ControllerBase
             return NotFound(new { message = "Пользователь не найден." });
 
         var now = DateTime.UtcNow;
-
-        // Проверка количества попыток
+        
         if (user.PasswordResetAttempts >= 10)
         {
             return BadRequest(new { message = "Превышено допустимое количество запросов." });
         }
 
-        // Проверка интервала между запросами
         if (user.PasswordResetRequestedAt != null &&
             (now - user.PasswordResetRequestedAt.Value).TotalSeconds < 90)
         {
@@ -122,6 +125,8 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
+        if(CheckEmail(request.Email))
+            return Conflict(new { message = "Недопустимый адрес электронной почты" });
         var existing = await _dbContext.GetUserByEmailAsync(request.Email);
         if (existing != null)
             return Conflict(new { message = "Пользователь с таким email уже существует." });
@@ -133,7 +138,7 @@ public class AuthController : ControllerBase
             Name = request.Name,
             Email = request.Email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-            CanBeStaff = request.CanBeStaff,
+            CanBeStaff = true,
             IsEmailConfirmed = false,
             EmailConfirmationCode = confirmationCode
         };
@@ -141,29 +146,82 @@ public class AuthController : ControllerBase
         await _dbContext.CreateUserAsync(user);
 
         // Отправка письма
-        var confirmationLink = $"{Request.Scheme}://{Request.Host}/api/auth/confirm?code={confirmationCode}";
-        await _emailService.SendEmailAsync(request.Email, "Подтверждение регистрации", $"Для подтверждения перейдите по ссылке: {confirmationLink}");
+        var confirmationLink = $"http://172.17.0.1:8080/sign-in?confirm={confirmationCode}";
+        await _emailService.SendEmailAsync(
+            user.Email,
+            "Подтверждение электронной почты",
+            $"Для подтверждения перейдите по ссылке: <a href=\"{confirmationLink}\">{confirmationLink}</a>",
+            true
+        );
 
         return Ok(new { message = "Письмо с подтверждением отправлено на email." });
     }
-
-    [HttpGet("confirm")]
-    public async Task<IActionResult> ConfirmEmail([FromQuery] string code)
+    
+    [HttpGet("confirm-email")]
+    public async Task<IActionResult> ConfirmEmail([FromQuery] string token)
     {
-        var user = await _dbContext.GetUserByConfirmationCodeAsync(code);
+        var user = await _dbContext.GetUserByConfirmationCodeAsync(token);
         if (user == null)
-            return NotFound(new { message = "Неверный код подтверждения." });
+            return NotFound(new { success = false, message = "Неверный код подтверждения." });
 
         if (user.IsEmailConfirmed)
-            return BadRequest(new { message = "Email уже подтверждён." });
+            return Ok(new { success = true, message = "Почта уже подтверждена." });
 
         user.IsEmailConfirmed = true;
         user.EmailConfirmationCode = "";
         await _dbContext.UpdateUserAsync(user);
+        
+        return Ok(new { success = true, message = "Почта успешно подтверждена." });
+    }
+    [HttpGet("me")]
+    [Authorize]
+    public async Task<IActionResult> GetUserData()
+    {
+        var userId = int.Parse(User.FindFirst("userId")?.Value!);
+        var user = await _dbContext.GetUserByIdAsync(userId);
+        if (user == null)
+            return NotFound(new { message = "Пользователь не найден." });
 
-        return Ok(new { message = "Email подтверждён успешно!" });
+        return Ok(new
+        {
+            user.Id,
+            user.Name,
+            user.Email,
+            user.CanBeStaff,
+            user.IsEmailConfirmed
+        });
     }
 
+    [HttpPut("change-password")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        var userId = int.Parse(User.FindFirst("userId")?.Value!);
+        var user = await _dbContext.GetUserByIdAsync(userId);
+
+        if (user == null || !user.VerifyPassword(request.OldPassword))
+            return BadRequest(new { message = "Неверный старый пароль." });
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        await _dbContext.UpdateUserAsync(user);
+
+        return Ok(new { message = "Пароль успешно обновлён." });
+    }
+    [HttpPut("change-name")]
+    [Authorize]
+    public async Task<IActionResult> ChangeName([FromBody] ChangeNameRequest request)
+    {
+        var userId = int.Parse(User.FindFirst("userId")?.Value!);
+        var user = await _dbContext.GetUserByIdAsync(userId);
+
+        if (user == null)
+            return NotFound(new { message = "Пользователь не найден." });
+
+        user.Name = request.Name;
+        await _dbContext.UpdateUserAsync(user);
+
+        return Ok(new { message = "Имя успешно обновлено." });
+    }
 
     bool CheckEmail(string email)
     {

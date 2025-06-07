@@ -18,6 +18,7 @@
         <PackageReference Include="Microsoft.Identity.Web" Version="3.2.0"/>
         <PackageReference Include="Microsoft.Identity.Web.DownstreamApi" Version="3.2.0"/>
         <PackageReference Include="Neo4j.Driver.Simple" Version="5.27.0" />
+        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.9" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2"/>
         <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="7.3.1" />
         <PackageReference Include="System.Drawing.Common" Version="10.0.0-preview.1.25080.3" />

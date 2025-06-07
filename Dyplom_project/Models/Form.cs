@@ -3,11 +3,16 @@ using System.Collections.Generic;
 public class Form
 {
     public int Id { get; set; }
-    public List<string> Fields { get; set; } = new();
+    public List<FormField> Fields { get; set; } = new();
 }
-public class FormTemplate
+
+public class FormField
 {
-    public int Id { get; set; }
-    public string Subject { get; set; } = "";
-    public string Body { get; set; } = "";
+    public string Name { get; set; } = default!;
+    public string Type { get; set; } = default!;
+}
+
+public class UpdateParticipantRequest
+{
+    public Dictionary<string, string> Data { get; set; } = new();
 }

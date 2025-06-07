@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "CVUQiIts7fw=",
+  "dgSpecHash": "k+dluL+LViA=",
   "success": true,
   "projectFilePath": "/home/olga/RiderProjects/Dyplom_project/Dyplom_project/Dyplom_project.csproj",
   "expectedPackageFiles": [
@@ -65,6 +65,7 @@
     "/home/olga/.nuget/packages/neo4j.driver.simple/5.27.0/neo4j.driver.simple.5.27.0.nupkg.sha512",
     "/home/olga/.nuget/packages/rbush.signed/4.0.0/rbush.signed.4.0.0.nupkg.sha512",
     "/home/olga/.nuget/packages/sixlabors.fonts/1.0.0/sixlabors.fonts.1.0.0.nupkg.sha512",
+    "/home/olga/.nuget/packages/sixlabors.imagesharp/3.1.9/sixlabors.imagesharp.3.1.9.nupkg.sha512",
     "/home/olga/.nuget/packages/swashbuckle.aspnetcore/6.6.2/swashbuckle.aspnetcore.6.6.2.nupkg.sha512",
     "/home/olga/.nuget/packages/swashbuckle.aspnetcore.annotations/7.3.1/swashbuckle.aspnetcore.annotations.7.3.1.nupkg.sha512",
     "/home/olga/.nuget/packages/swashbuckle.aspnetcore.swagger/7.3.1/swashbuckle.aspnetcore.swagger.7.3.1.nupkg.sha512",

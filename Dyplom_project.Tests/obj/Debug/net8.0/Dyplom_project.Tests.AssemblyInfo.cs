@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Dyplom_project.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f0e8940d405bf7ca3c1715fbf48bb1f8395252a1")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+eedbad22144a09d5b74a5da9b8cc39e48f133b44")]
 [assembly: System.Reflection.AssemblyProductAttribute("Dyplom_project.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Dyplom_project.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

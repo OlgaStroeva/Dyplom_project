@@ -1,11 +1,17 @@
 ﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AAsyncSession_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002Econfig_003FJetBrains_003FRider2024_002E3_003Fresharper_002Dhost_003FDecompilerCache_003Fdecompiler_003F6ad3c0977c2640a2a3f5a4f45d4f9a998de00_003F49_003F6651fb7b_003FAsyncSession_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
+	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003ACryptoProviderFactory_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002Econfig_003FJetBrains_003FRider2025_002E1_003Fresharper_002Dhost_003FSourcesCache_003F37b199de95706e702653d64c5cba36e845b60b4f3a99efe021b494ff79898c_003FCryptoProviderFactory_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AMonitor_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002Econfig_003FJetBrains_003FRider2024_002E3_003Fresharper_002Dhost_003FDecompilerCache_003Fdecompiler_003Fa182417b9d2d40df9b68a5f01303833fc2e800_003F06_003F88557a92_003FMonitor_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
+	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003ATaskAwaiter_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003F_002Econfig_003FJetBrains_003FRider2025_002E1_003Fresharper_002Dhost_003FSourcesCache_003F24276f5a960c41c7b74713aa84cb1cae4672f89e225b6dcd2fe9b297a3a39_003FTaskAwaiter_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/Environment/AssemblyExplorer/XmlDocument/@EntryValue">&lt;AssemblyExplorer&gt;
   &lt;Assembly Path="/home/olga/.nuget/packages/microsoft.aspnetcore.authentication.jwtbearer/8.0.12/lib/net8.0/Microsoft.AspNetCore.Authentication.JwtBearer.dll" /&gt;
 &lt;/AssemblyExplorer&gt;</s:String>
 	<s:String x:Key="/Default/Environment/UnitTesting/CreateUnitTestDialog/TestProjectMapping/=E14181E5_002DEFDA_002D4AE6_002DA81C_002DE611C174DC3A/@EntryIndexedValue">Dyplom_project.Tests</s:String>
 	<s:String x:Key="/Default/Environment/UnitTesting/CreateUnitTestDialog/TestTemplateMapping/=MSTest/@EntryIndexedValue">d6790ab7-33c2-4425-b2c9-51480cd1a852</s:String>
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=5b91f4e1_002D6715_002D43c6_002Db84b_002Dd6d2b9ede7d0/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from AuthControllerTest.cs" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
-  &lt;Solution /&gt;
+  &lt;Not&gt;
+    &lt;TestAncestor&gt;
+      &lt;TestId&gt;MSTest::F0E8B612-3E26-45C2-B8D3-9FDDC1302A36::net8.0::Dyplom_project.Tests.Models.ParticipantsControllerTest.CancelParticipant_Success_ReturnsOk&lt;/TestId&gt;
+    &lt;/TestAncestor&gt;
+  &lt;/Not&gt;
 &lt;/SessionState&gt;</s:String></wpf:ResourceDictionary>

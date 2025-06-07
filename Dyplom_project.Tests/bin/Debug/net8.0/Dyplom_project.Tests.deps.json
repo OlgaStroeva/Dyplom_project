@@ -83,6 +83,22 @@
           }
         }
       },
+      "BCrypt.Net-Next/4.0.3": {
+        "runtime": {
+          "lib/net6.0/BCrypt.Net-Next.dll": {
+            "assemblyVersion": "4.0.3.0",
+            "fileVersion": "4.0.3.0"
+          }
+        }
+      },
+      "BouncyCastle.Cryptography/2.5.1": {
+        "runtime": {
+          "lib/net6.0/BouncyCastle.Cryptography.dll": {
+            "assemblyVersion": "2.0.0.0",
+            "fileVersion": "2.5.1.28965"
+          }
+        }
+      },
       "Castle.Core/5.1.1": {
         "dependencies": {
           "System.Diagnostics.EventLog": "6.0.0"
@@ -152,6 +168,18 @@
           "lib/netstandard2.0/JetBrains.Annotations.dll": {
             "assemblyVersion": "4242.42.42.42",
             "fileVersion": "2025.1.0.0"
+          }
+        }
+      },
+      "MailKit/4.12.0": {
+        "dependencies": {
+          "MimeKit": "4.12.0",
+          "System.Formats.Asn1": "8.0.2"
+        },
+        "runtime": {
+          "lib/net8.0/MailKit.dll": {
+            "assemblyVersion": "4.12.0.0",
+            "fileVersion": "4.12.0.0"
           }
         }
       },
@@ -390,7 +418,7 @@
           "Microsoft.Identity.Web.TokenCache": "3.2.0",
           "Microsoft.IdentityModel.Protocols.OpenIdConnect": "8.1.0",
           "Microsoft.IdentityModel.Validators": "8.1.0",
-          "System.Formats.Asn1": "8.0.1",
+          "System.Formats.Asn1": "8.0.2",
           "System.IdentityModel.Tokens.Jwt": "8.1.0",
           "System.Text.Json": "8.0.4"
         },
@@ -481,8 +509,8 @@
           "Microsoft.Extensions.Logging": "8.0.0",
           "Microsoft.Identity.Client": "4.64.1",
           "Microsoft.Identity.Web.Diagnostics": "3.2.0",
-          "System.Formats.Asn1": "8.0.1",
-          "System.Security.Cryptography.Pkcs": "8.0.0",
+          "System.Formats.Asn1": "8.0.2",
+          "System.Security.Cryptography.Pkcs": "8.0.1",
           "System.Security.Cryptography.Xml": "8.0.1"
         },
         "runtime": {
@@ -1080,6 +1108,18 @@
           }
         }
       },
+      "MimeKit/4.12.0": {
+        "dependencies": {
+          "BouncyCastle.Cryptography": "2.5.1",
+          "System.Security.Cryptography.Pkcs": "8.0.1"
+        },
+        "runtime": {
+          "lib/net8.0/MimeKit.dll": {
+            "assemblyVersion": "4.12.0.0",
+            "fileVersion": "4.12.0.0"
+          }
+        }
+      },
       "Moq/4.20.72": {
         "dependencies": {
           "Castle.Core": "5.1.1"
@@ -1281,7 +1321,7 @@
           }
         }
       },
-      "System.Formats.Asn1/8.0.1": {},
+      "System.Formats.Asn1/8.0.2": {},
       "System.IdentityModel.Tokens.Jwt/8.1.0": {
         "dependencies": {
           "Microsoft.IdentityModel.JsonWebTokens": "8.1.0",
@@ -1318,9 +1358,20 @@
       },
       "System.Numerics.Vectors/4.5.0": {},
       "System.Reflection.Metadata/1.6.0": {},
-      "System.Security.Cryptography.Pkcs/8.0.0": {
-        "dependencies": {
-          "System.Formats.Asn1": "8.0.1"
+      "System.Security.Cryptography.Pkcs/8.0.1": {
+        "runtime": {
+          "lib/net8.0/System.Security.Cryptography.Pkcs.dll": {
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.1024.46610"
+          }
+        },
+        "runtimeTargets": {
+          "runtimes/win/lib/net8.0/System.Security.Cryptography.Pkcs.dll": {
+            "rid": "win",
+            "assetType": "runtime",
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.1024.46610"
+          }
         }
       },
       "System.Security.Cryptography.ProtectedData/4.7.0": {
@@ -1341,7 +1392,7 @@
       },
       "System.Security.Cryptography.Xml/8.0.1": {
         "dependencies": {
-          "System.Security.Cryptography.Pkcs": "8.0.0"
+          "System.Security.Cryptography.Pkcs": "8.0.1"
         },
         "runtime": {
           "lib/net8.0/System.Security.Cryptography.Xml.dll": {
@@ -1360,7 +1411,9 @@
       "System.ValueTuple/4.5.0": {},
       "Dyplom_project/1.0.0": {
         "dependencies": {
+          "BCrypt.Net-Next": "4.0.3",
           "ClosedXML": "0.105.0-rc",
+          "MailKit": "4.12.0",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "8.0.12",
           "Microsoft.AspNetCore.Authentication.OpenIdConnect": "8.0.12",
           "Microsoft.AspNetCore.OpenApi": "8.0.12",
@@ -1422,6 +1475,20 @@
       "path": "azure.security.keyvault.secrets/4.6.0",
       "hashPath": "azure.security.keyvault.secrets.4.6.0.nupkg.sha512"
     },
+    "BCrypt.Net-Next/4.0.3": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-W+U9WvmZQgi5cX6FS5GDtDoPzUCV4LkBLkywq/kRZhuDwcbavOzcDAr3LXJFqHUi952Yj3LEYoWW0jbEUQChsA==",
+      "path": "bcrypt.net-next/4.0.3",
+      "hashPath": "bcrypt.net-next.4.0.3.nupkg.sha512"
+    },
+    "BouncyCastle.Cryptography/2.5.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-zy8TMeTP+1FH2NrLaNZtdRbBdq7u5MI+NFZQOBSM69u5RFkciinwzV2eveY6Kjf5MzgsYvvl6kTStsj3JrXqkg==",
+      "path": "bouncycastle.cryptography/2.5.1",
+      "hashPath": "bouncycastle.cryptography.2.5.1.nupkg.sha512"
+    },
     "Castle.Core/5.1.1": {
       "type": "package",
       "serviceable": true,
@@ -1470,6 +1537,13 @@
       "sha512": "sha512-5ApJk9xbFOdbz7L8W9LAA63DIMbqC1p81KOYLeLu+d3Pj9yC83aZBQgHce/LCCu9j/mzVZxEUl70rDoUEGs7Gg==",
       "path": "jetbrains.annotations/2025.1.0-eap1",
       "hashPath": "jetbrains.annotations.2025.1.0-eap1.nupkg.sha512"
+    },
+    "MailKit/4.12.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-DShr4dH9IZeUUQI7D5+zhxBKaiBrE/4+3APO2nSzCJwILv3lnViZew7yuoBJUWxAnwxzneJIFokxc8nvAQVZqg==",
+      "path": "mailkit/4.12.0",
+      "hashPath": "mailkit.4.12.0.nupkg.sha512"
     },
     "Microsoft.ApplicationInsights/2.22.0": {
       "type": "package",
@@ -1849,6 +1923,13 @@
       "path": "microsoft.win32.systemevents/10.0.0-preview.1.25080.5",
       "hashPath": "microsoft.win32.systemevents.10.0.0-preview.1.25080.5.nupkg.sha512"
     },
+    "MimeKit/4.12.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-PFUHfs6BZxKYM/QPJksAwXphbJf0SEfdSfsoQ6p6yvFRaJPofFJMBiotWhFRrdSUzfp6C6K49EjBIqIwZ2TJqA==",
+      "path": "mimekit/4.12.0",
+      "hashPath": "mimekit.4.12.0.nupkg.sha512"
+    },
     "Moq/4.20.72": {
       "type": "package",
       "serviceable": true,
@@ -1975,12 +2056,12 @@
       "path": "system.drawing.common/10.0.0-preview.1.25080.3",
       "hashPath": "system.drawing.common.10.0.0-preview.1.25080.3.nupkg.sha512"
     },
-    "System.Formats.Asn1/8.0.1": {
+    "System.Formats.Asn1/8.0.2": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-XqKba7Mm/koKSjKMfW82olQdmfbI5yqeoLV/tidRp7fbh5rmHAQ5raDI/7SU0swTzv+jgqtUGkzmFxuUg0it1A==",
-      "path": "system.formats.asn1/8.0.1",
-      "hashPath": "system.formats.asn1.8.0.1.nupkg.sha512"
+      "sha512": "sha512-yUsFqNGa7tbwm5QOOnOR3VSoh8a0Yki39mTbhOnErdbg8hVSFtrK0EXerj286PXcegiF1LkE7lL++qqMZW5jIQ==",
+      "path": "system.formats.asn1/8.0.2",
+      "hashPath": "system.formats.asn1.8.0.2.nupkg.sha512"
     },
     "System.IdentityModel.Tokens.Jwt/8.1.0": {
       "type": "package",
@@ -2031,12 +2112,12 @@
       "path": "system.reflection.metadata/1.6.0",
       "hashPath": "system.reflection.metadata.1.6.0.nupkg.sha512"
     },
-    "System.Security.Cryptography.Pkcs/8.0.0": {
+    "System.Security.Cryptography.Pkcs/8.0.1": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-ULmp3xoOwNYjOYp4JZ2NK/6NdTgiN1GQXzVVN1njQ7LOZ0d0B9vyMnhyqbIi9Qw4JXj1JgCsitkTShboHRx7Eg==",
-      "path": "system.security.cryptography.pkcs/8.0.0",
-      "hashPath": "system.security.cryptography.pkcs.8.0.0.nupkg.sha512"
+      "sha512": "sha512-CoCRHFym33aUSf/NtWSVSZa99dkd0Hm7OCZUxORBjRB16LNhIEOf8THPqzIYlvKM0nNDAPTRBa1FxEECrgaxxA==",
+      "path": "system.security.cryptography.pkcs/8.0.1",
+      "hashPath": "system.security.cryptography.pkcs.8.0.1.nupkg.sha512"
     },
     "System.Security.Cryptography.ProtectedData/4.7.0": {
       "type": "package",

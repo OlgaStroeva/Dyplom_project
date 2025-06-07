@@ -9,6 +9,16 @@ var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new ArgumentNullException
 
 builder.Services.AddSingleton<ApplicationDbContext>();
 builder.Services.AddSingleton<JwtService>();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("*") // адрес фронтенда
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -21,9 +31,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? string.Empty))
         };
     });
+
 builder.Services.AddSwaggerGen(c =>
 {
     c.EnableAnnotations();
@@ -68,6 +80,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseCors(policy => policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+app.UseRouting();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();

@@ -25,10 +25,15 @@ public class EmailService : IEmailService
             : new TextPart("plain") { Text = body };
 
         using var client = new SmtpClient();
-        await client.ConnectAsync(_config["Email:SmtpHost"], int.Parse(_config["Email:SmtpPort"]), SecureSocketOptions.StartTls);
-        await client.AuthenticateAsync(_config["Email:Sender"], _config["Email:Password"]);
+        await client.ConnectAsync("localhost", 2525, SecureSocketOptions.None);
         await client.SendAsync(message);
         await client.DisconnectAsync(true);
+
+        /*await client.ConnectAsync(_config["Email:SmtpHost"], int.Parse(_config["Email:SmtpPort"]), SecureSocketOptions.None);
+        await client.SendAsync(message);
+        await client.DisconnectAsync(true);*/
     }
+
+
 }
 

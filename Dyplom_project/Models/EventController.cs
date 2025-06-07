@@ -115,6 +115,7 @@ public class EventController : ControllerBase
     [SwaggerOperation(Summary = "Получить все мероприятия пользователя", Description = "Возвращает список мероприятий, созданных авторизованным пользователем.")]
     [SwaggerResponse(200, "Список мероприятий получен")]
     [SwaggerResponse(401, "Неавторизованный запрос")]
+    [Authorize]
     public async Task<IActionResult> GetUserEvents()
     {
         var userIdClaim = User.FindFirst("userId");
