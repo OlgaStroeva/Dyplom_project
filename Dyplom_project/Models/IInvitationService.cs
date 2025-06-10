@@ -1,6 +1,6 @@
 namespace Dyplom_project.Models;
-
+// IInvitationService.cs
 public interface IInvitationService
 {
-    Task<int> SendInvitationsAsync(int eventId);
+    Task<bool> SendInvitationsAsync(int participantId, int formId);
 }

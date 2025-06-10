@@ -66,6 +66,8 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
+builder.Services.AddScoped<InvitationService>();
+
 builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();

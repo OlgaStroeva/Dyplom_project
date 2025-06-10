@@ -7,25 +7,38 @@ namespace Dyplom_project.Models;
 [Route("api/invitations")]
 public class InvitationController : ControllerBase
 {
-    private readonly IInvitationService _invitationService;
+    private readonly InvitationService _invitationService;
 
-    public InvitationController(IInvitationService invitationService)
+    public InvitationController(InvitationService invitationService)
     {
         _invitationService = invitationService;
     }
 
-    [HttpPost("send/{eventId}")]
+    [HttpPost("send/{formId}/{participantId}")]
     [Authorize]
-    public async Task<IActionResult> SendInvitations(int eventId)
+    public async Task<IActionResult> SendInvitation(int participantId, int formId)
     {
         try
         {
-            int count = await _invitationService.SendInvitationsAsync(eventId);
-            return Ok(new { message = $"Приглашения отправлены {count} участникам." });
+            Console.WriteLine($"Вызов SendInvitation для participantId={participantId}, formId={formId}");
+        
+            bool success = await _invitationService.SendInvitationsAsync(participantId, formId);
+        
+            Console.WriteLine($"Успешная отправка для participantId={participantId}");
+            return Ok(new { 
+                message = $"Приглашение отправлено участнику {participantId}",
+                participantId,
+                formId
+            });
         }
         catch (Exception ex)
         {
-            return BadRequest(new { message = ex.Message });
+            Console.WriteLine($"Ошибка для participantId={participantId}: {ex}");
+            return BadRequest(new { 
+                message = ex.Message,
+                participantId,
+                formId
+            });
         }
     }
 }

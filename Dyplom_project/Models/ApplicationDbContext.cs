@@ -72,7 +72,7 @@ public class ApplicationDbContext : IDisposable
         var result = await session.RunAsync(
             @"MATCH (:Event {id: $eventId})-[:HAS_FORM]->(f:Form)
           MATCH (f)-[:HAS_PARTICIPANT_DATA]->(p:ParticipantData)
-          RETURN p.id AS id, p.data AS data",
+          RETURN p.id AS id, p.data AS data, p.attended AS attended, p.invited AS invited, p.qrCode AS qrCode",
             new { eventId });
 
         var records = await result.ToListAsync();
@@ -81,9 +81,12 @@ public class ApplicationDbContext : IDisposable
             Id = r["id"].As<int>(),
             Data = r["data"].As<Dictionary<string, object>>()
                 .ToDictionary(k => k.Key, v => v.Value?.ToString() ?? ""),
-            Attended = r.ContainsKey("attended") && r["attended"].As<bool>()
+            Attended = r.Keys.Contains("attended") && r["attended"] != null && r["attended"].As<bool>(),
+            Invited = r.Keys.Contains("invited") && r["invited"] != null && r["invited"].As<bool>(),
+            qrCode = r.Keys.Contains("qrCode") && r["qrCode"] != null ? r["qrCode"].As<string>() : ""
         }).ToList();
     }
+
     
     public async Task<bool> UpdateParticipantAttendanceAsync(int formId, int participantId, bool attended)
     {
@@ -744,13 +747,15 @@ public virtual async Task<List<string>> AddParticipantDataAsync(int formId, List
             {
                 await tx.RunAsync(
                     @"MATCH (f:Form {id: $formId})
-                      CREATE (p:ParticipantData {id: $participantId, formId: $formId, data: $data})
+                      CREATE (p:ParticipantData {id: $participantId, formId: $formId, data: $data, invited: $invited, qrCode: $QrCode})
                       CREATE (f)-[:HAS_PARTICIPANT_DATA]->(p)",
                     new
                     {
                         formId,
                         participantId = new Random().Next(10000, 99999),
-                        data = participant
+                        data = participant,
+                        invited = false,
+                        QrCode  = "",
                     });
             }
         });
@@ -790,6 +795,7 @@ public virtual async Task<List<string>> AddParticipantDataAsync(int formId, List
     public virtual async Task<bool> AddQrCodeToParticipantAsync(int participantId, string qrCodeBase64)
     {
         await using var session = _driver.AsyncSession();
+        //Console.WriteLine(qrCodeBase64);
         var result = await session.RunAsync(
             @"MATCH (p:ParticipantData {id: $participantId}) RETURN p",
             new { participantId }
@@ -808,6 +814,33 @@ public virtual async Task<List<string>> AddParticipantDataAsync(int formId, List
 
         return true;
     }
+    
+    public virtual async Task<ParticipantData?> GetParticipantByIdAsync(int participantId)
+    {
+        await using var session = _driver.AsyncSession();
+        return await session.ReadTransactionAsync(async tx =>
+        {
+            var result = await tx.RunAsync(
+                @"MATCH (p:ParticipantData {id: $participantId}) 
+              RETURN p.id AS id, p.data AS data, p.attended AS attended, p.invited AS invited, p.qrCode AS qrCode",
+                new { participantId }
+            );
+
+            var record = (await result.ToListAsync()).FirstOrDefault();
+            if (record == null) return null;
+            
+            return record == null ? null : new ParticipantData
+            {
+                Id = record["id"].As<int>(),
+                Data = record["data"].As<Dictionary<string, object>>()
+                    .ToDictionary(k => k.Key, v => v.Value?.ToString() ?? ""),
+                Attended = record["attended"]?.As<bool>() ?? false,
+                Invited = record["invited"]?.As<bool>() ?? false,
+                qrCode = record["qrCode"]?.As<string>()
+            };
+        });
+    }
+    
     public async Task<List<Form>> GetAvailableFormsByUserIdAsync(int userId)
     {
         await using var session = _driver.AsyncSession();
@@ -887,6 +920,17 @@ public virtual async Task<List<string>> AddParticipantDataAsync(int formId, List
                 @"MATCH (u:User {id: $userId})
               SET u.canBeStaff = NOT coalesce(u.canBeStaff, false)",
                 new { userId });
+        });
+    }
+    public async Task UpdateParticipantInvitationAsync(int participantId)
+    {
+        await using var session = _driver.AsyncSession();
+        await session.WriteTransactionAsync(async tx =>
+        {
+            await tx.RunAsync(
+                @"MATCH (p:ParticipantData {id: $participantId})
+              SET p.invited = $invited",
+                new { participantId, invited = true });
         });
     }
     

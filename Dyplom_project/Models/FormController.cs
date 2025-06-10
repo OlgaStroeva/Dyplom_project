@@ -4,6 +4,8 @@ using Swashbuckle.AspNetCore.Annotations;
 using System.Drawing;
 using System.Drawing.Imaging;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.Processing;
 using Image = SixLabors.ImageSharp.Image;
 
 [Route("api/forms")]
@@ -214,7 +216,6 @@ public class FormController : ControllerBase
         return Ok(new { message = "Файл обработан.", errors });
     }
     
-    [HttpPost("add-qr/{participantId}")]
     [Authorize]
     [SwaggerOperation(Summary = "Добавить QR-код", Description = "Позволяет организатору или сотруднику добавить QR-код к участнику.")]
     [SwaggerResponse(200, "QR-код добавлен")]
@@ -226,11 +227,20 @@ public class FormController : ControllerBase
         if (file == null || file.Length == 0)
             return BadRequest(new { message = "Файл не загружен." });
 
-        using var inputStream = file.OpenReadStream();
+        /*using var inputStream = file.OpenReadStream();
         using var image = await Image.LoadAsync(inputStream); // ✅ кроссплатформенно
         using var outputStream = new MemoryStream();
 
         await image.SaveAsPngAsync(outputStream); // ✅ сохраняем как PNG
+        string qrCodeBase64 = Convert.ToBase64String(outputStream.ToArray());*/
+        using var inputStream = file.OpenReadStream();
+        using var image = await Image.LoadAsync(inputStream);
+
+        // Рекомендуется уменьшить размер (для безопасности почтовых клиентов)
+        image.Mutate(x => x.Resize(200, 200)); // ✅ фиксированный размер
+
+        using var outputStream = new MemoryStream();
+        await image.SaveAsync(outputStream, new PngEncoder());
         string qrCodeBase64 = Convert.ToBase64String(outputStream.ToArray());
 
         bool updated = await _dbContext.AddQrCodeToParticipantAsync(participantId, qrCodeBase64);
