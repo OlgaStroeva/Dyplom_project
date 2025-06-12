@@ -129,5 +129,69 @@ public class EventController : ControllerBase
 
         return Ok(events);
     }
+    [Authorize]
+    [HttpDelete("delete/{eventId}")]
+    public async Task<IActionResult> DeleteEvent(int eventId)
+    {
+        var userIdClaim = User.FindFirst("userId");
+        if (userIdClaim == null)
+            return Unauthorized(new { message = "Пользователь не авторизован." });
 
+        int userId = int.Parse(userIdClaim.Value);
+        var eventData = await _dbContext.GetEventByIdAsync(eventId);
+        if (eventData == null)
+            return NotFound(new { message = "Мероприятие не найдено." });
+
+        if (eventData.CreatedBy != userId)
+            return Forbid();
+
+        // Удаляем, если статус "finished"
+        if (eventData.Status == "finished")
+        {
+            await _dbContext.DeleteEventAsync(eventId);
+            return Ok(new { message = "Мероприятие успешно удалено (статус: finished)." });
+        }
+
+        // Проверяем, были ли приглашения отправлены
+        var form = await _dbContext.GetFormByEventIdAsync(eventId);
+        if (form != null)
+        {
+            var participants = await _dbContext.GetAllParticipantDataAsync(form.Id);
+            if (participants.Any(p => p.Invited))
+                return BadRequest(new { message = "Нельзя удалить мероприятие — приглашения уже были отправлены." });
+        }
+
+        await _dbContext.DeleteEventAsync(eventId);
+        return Ok(new { message = "Мероприятие удалено (без отправленных приглашений)." });
+    }
+
+    
+    
+    [SwaggerOperation(Summary = "Обновить статус мероприятия")]
+    [SwaggerResponse(200, "Статус обновлен")]
+    [SwaggerResponse(400, "Некорректный статус")]
+    [SwaggerResponse(404, "Мероприятие не найдено")]
+    [Authorize]
+    [HttpPut("{eventId}/status")]
+    public async Task<IActionResult> UpdateEventStatus(
+        int eventId, 
+        [FromBody] UpdateEventStatusRequest request)
+    {
+        // Валидация статуса
+        var allowedStatuses = new[] { "upcoming", "in_progress", "finished"};
+        if (!allowedStatuses.Contains(request.Status?.ToLower()))
+        {
+            return BadRequest("Недопустимый статус мероприятия");
+        }
+
+        try
+        {
+            await _dbContext.UpdateEventStatusAsync(eventId, request.Status!);
+            return Ok(new { Message = "Статус мероприятия обновлен" });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = "Ошибка сервера"});
+        }
+    }
 }

@@ -87,6 +87,22 @@ public class ApplicationDbContext : IDisposable
         }).ToList();
     }
 
+    public async Task DeleteEventAsync(int eventId)
+    {
+        await using var session = _driver.AsyncSession();
+        await session.WriteTransactionAsync(async tx =>
+        {
+            await tx.RunAsync(
+                @"
+            MATCH (e:Event {id: $eventId})
+            OPTIONAL MATCH (e)-[:HAS_FORM]->(f:Form)-[:HAS_PARTICIPANT_DATA]->(p:ParticipantData)
+            DETACH DELETE e, f, p
+            ",
+                new { eventId }
+            );
+        });
+    }
+
     
     public async Task<bool> UpdateParticipantAttendanceAsync(int formId, int participantId, bool attended)
     {
@@ -254,13 +270,29 @@ public class ApplicationDbContext : IDisposable
                     category = evt.Category,
                     location = evt.Location,
                     userId = evt.CreatedBy,
-                    status = evt.Status
+                    status = "upcoming"
                 });
         });
 
         return evt.Id;
     }
-
+    public virtual async Task UpdateEventStatusAsync(int eventId, string status)
+    {
+        await using var session = _driver.AsyncSession();
+        await session.WriteTransactionAsync(async tx =>
+        {
+            await tx.RunAsync(
+                @"MATCH (e:Event {id: $eventId})
+              SET e.status = $status",
+                new
+                {
+                    eventId, status
+                });
+        });
+        Console.WriteLine(eventId);
+        Console.WriteLine(status);
+    }
+    
     public virtual async Task UpdateEventAsync(int eventId, UpdateEventRequest request)
     {
         await using var session = _driver.AsyncSession();
@@ -273,8 +305,7 @@ public class ApplicationDbContext : IDisposable
                   e.imageBase64 = $imageBase64,
                   e.dateTime = $dateTime,
                   e.category = $category,
-                  e.location = $location,
-                  e.status = $status",
+                  e.location = $location",
                 new
                 {
                     eventId,
@@ -283,8 +314,7 @@ public class ApplicationDbContext : IDisposable
                     imageBase64 = request.ImageBase64 ?? "",
                     dateTime = request.DateTime ?? "",
                     category = request.Category ?? "",
-                    location = request.Location ?? "",
-                    status = request.Status ?? ""
+                    location = request.Location ?? ""
                 });
         });
     }
