@@ -200,8 +200,8 @@ public async Task GetParticipants_ValidRequest_ReturnsParticipants()
     
     var expectedParticipants = new List<ParticipantData>
     {
-        new ParticipantData { Id = 1, FormId = 1, Data = new Dictionary<string, string> { ["Name"] = "John" } },
-        new ParticipantData { Id = 2, FormId = 1, Data = new Dictionary<string, string> { ["Name"] = "Alice" } }
+        new ParticipantData { Id = 1,  Data = new Dictionary<string, string> { ["Name"] = "John" } },
+        new ParticipantData { Id = 2,  Data = new Dictionary<string, string> { ["Name"] = "Alice" } }
     };
     
     _mockDbContext.Setup(x => x.GetParticipantsByEventIdAsync(eventId))

@@ -146,7 +146,7 @@ public class AuthController : ControllerBase
         await _dbContext.CreateUserAsync(user);
 
         // Отправка письма
-        var confirmationLink = $"http://172.17.0.1:8080/sign-in?confirm={confirmationCode}";
+        var confirmationLink = $"http://158.160.171.159:3000/sign-in?confirm={confirmationCode}";
         await _emailService.SendEmailAsync(
             user.Email,
             "Подтверждение электронной почты",
@@ -218,7 +218,7 @@ public class AuthController : ControllerBase
             return NotFound(new { message = "Пользователь не найден." });
 
         user.Name = request.Name;
-        await _dbContext.UpdateUserAsync(user);
+        await _dbContext.UpdateUserNameAsync(user);
 
         return Ok(new { message = "Имя успешно обновлено." });
     }

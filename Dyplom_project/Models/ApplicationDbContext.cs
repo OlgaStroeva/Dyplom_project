@@ -219,7 +219,8 @@ public class ApplicationDbContext : IDisposable
                  e.dateTime AS dateTime,
                  e.category AS category,
                  e.location AS location,
-                 e.createdBy AS createdBy",
+                 e.createdBy AS createdBy,
+                 e.status AS status",
             new { userId }
         );
 
@@ -234,7 +235,8 @@ public class ApplicationDbContext : IDisposable
             DateTime = r["dateTime"].As<string>(),
             Category = r["category"].As<string>(),
             Location = r["location"].As<string>(),
-            CreatedBy = r["createdBy"].As<int>()
+            CreatedBy = r["createdBy"].As<int>(),
+            Status = r["status"].As<string>()
         }).ToList();
     }
 
@@ -257,7 +259,7 @@ public class ApplicationDbContext : IDisposable
                 category: $category,
                 location: $location,
                 createdBy: $userId,
-                Status : $status
+                status : $status
               })
               CREATE (u)-[:CREATED]->(e)",
                 new
@@ -278,20 +280,39 @@ public class ApplicationDbContext : IDisposable
     }
     public virtual async Task UpdateEventStatusAsync(int eventId, string status)
     {
-        await using var session = _driver.AsyncSession();
-        await session.WriteTransactionAsync(async tx =>
+        try
         {
-            await tx.RunAsync(
-                @"MATCH (e:Event {id: $eventId})
-              SET e.status = $status",
-                new
+            await using var session = _driver.AsyncSession();
+            await session.WriteTransactionAsync(async tx =>
+            {
+                Console.WriteLine($"Attempting to update Event with ID: {eventId}, New Status: {status}");
+
+                var result = await tx.RunAsync(
+                    @"MATCH (e:Event {id: $eventId})
+                  SET e.status = $status
+                  RETURN e.status AS updatedStatus",
+                    new { eventId, status });
+
+                var records = await result.ToListAsync();
+
+                if (records.Count > 0)
                 {
-                    eventId, status
-                });
-        });
-        Console.WriteLine(eventId);
-        Console.WriteLine(status);
+                    var updatedStatus = records[0]["updatedStatus"];
+                    Console.WriteLine($"Status updated successfully to: {updatedStatus}");
+                }
+                else
+                {
+                    Console.WriteLine($"No Event found with id: {eventId}");
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error while updating status: {ex.Message}");
+        }
     }
+
+
     
     public virtual async Task UpdateEventAsync(int eventId, UpdateEventRequest request)
     {
@@ -305,7 +326,8 @@ public class ApplicationDbContext : IDisposable
                   e.imageBase64 = $imageBase64,
                   e.dateTime = $dateTime,
                   e.category = $category,
-                  e.location = $location",
+                  e.location = $location,
+                    e.status = $status",
                 new
                 {
                     eventId,
@@ -314,7 +336,8 @@ public class ApplicationDbContext : IDisposable
                     imageBase64 = request.ImageBase64 ?? "",
                     dateTime = request.DateTime ?? "",
                     category = request.Category ?? "",
-                    location = request.Location ?? ""
+                    location = request.Location ?? "",
+                    status = request.Status ?? ""
                 });
         });
     }
@@ -642,11 +665,25 @@ public class ApplicationDbContext : IDisposable
         };
     }
     
-
+    public async Task UpdateUserConfirmAsync(User user)
+    {
+        await using var session = _driver.AsyncSession();
+        await session.WriteTransactionAsync(async tx =>
+        {
+            await tx.RunAsync(
+                @"MATCH (u:User {id: $id})
+              SET u.isEmailConfirmed = $isEmailConfirmed",
+                new
+                {
+                    isEmailConfirmed = true
+                });
+        });
+    }
     
     public async Task UpdateUserAsync(User user)
     {
         await using var session = _driver.AsyncSession();
+        Console.WriteLine(user.IsEmailConfirmed);
         await session.WriteTransactionAsync(async tx =>
         {
             await tx.RunAsync(
@@ -666,6 +703,39 @@ public class ApplicationDbContext : IDisposable
                     isEmailConfirmed = user.IsEmailConfirmed
                 });
         });
+    }
+    public virtual async Task UpdateUserNameAsync(User user)
+    {
+        try
+        {
+            await using var session = _driver.AsyncSession();
+            await session.WriteTransactionAsync(async tx =>
+            {
+                Console.WriteLine($"Updating name for user with ID: {user.Id} to: {user.Name}");
+
+                var result = await tx.RunAsync(
+                    @"MATCH (u:User {id: $userId})
+                  SET u.name = $newName
+                  RETURN u.name AS updatedName",
+                    new { userId = user.Id, newName = user.Name });
+
+                var records = await result.ToListAsync();
+
+                if (records.Count > 0)
+                {
+                    Console.WriteLine($"Name updated successfully to: {records[0]["updatedName"]}");
+                }
+                else
+                {
+                    Console.WriteLine($"User with ID {user.Id} not found.");
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating user name: {ex.Message}");
+            throw;
+        }
     }
 
     public async Task<User?> GetUserByIdAsync(int userId)
