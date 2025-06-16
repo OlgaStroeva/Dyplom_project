@@ -135,6 +135,7 @@ public class AuthController : ControllerBase
 
         var user = new User
         {
+            Id = new Random().Next(10000, 99999),
             Name = request.Name,
             Email = request.Email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
@@ -179,6 +180,7 @@ public class AuthController : ControllerBase
     {
         var userIdClaim = User.FindFirst("userId");
         var userId = userIdClaim?.Value;
+        Console.WriteLine(userId);
         var user = await _dbContext.GetUserByIdAsync(Convert.ToInt32(userId));
         if (user == null)
             return NotFound(new { message = "Пользователь не найден." });

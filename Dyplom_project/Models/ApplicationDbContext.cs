@@ -22,24 +22,34 @@ public class ApplicationDbContext : IDisposable
     public virtual async Task CreateUserAsync(User user)
     {
         await using var session = _driver!.AsyncSession();
+
         await session.WriteTransactionAsync(async tx =>
         {
-            await tx.RunAsync(
-                "CREATE (u:User {id: $id, name: $name," +
-                " email: $email," +
-                " password: $password, " +
-                "emailConfirmationCode: $code," +
-                "isEmailConfirmed : $isEmailConfirmed," +
-                "canBeStaff : $CanBeStaff})",
-                new { id = user.Id, name = user.Name, 
-                    email = user.Email, password = user.PasswordHash, 
+            await tx.RunAsync(@"
+MATCH (s:IdSequence {for: 'User'})
+WITH s, s.next AS newId
+SET s.next = s.next + 1
+CREATE (u:User {
+    id: newId,
+    name: $name,
+    email: $email,
+    password: $password,
+    emailConfirmationCode: $code,
+    isEmailConfirmed: $isEmailConfirmed,
+    canBeStaff: $CanBeStaff
+})",
+                new
+                {
+                    name = user.Name,
+                    email = user.Email,
+                    password = user.PasswordHash,
                     code = user.EmailConfirmationCode,
                     isEmailConfirmed = false,
                     CanBeStaff = true
-                }
-            );
+                });
         });
     }
+
 
     public async Task<User?> GetUserByResetTokenAsync(string token)
     {
