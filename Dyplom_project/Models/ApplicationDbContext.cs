@@ -211,16 +211,17 @@ public class ApplicationDbContext : IDisposable
     {
         await using var session = _driver.AsyncSession();
         var result = await session.RunAsync(
-            @"MATCH (u:User {id: $userId})-[:CREATED]->(e:Event)
-          RETURN e.id AS id,
-                 e.name AS name,
-                 e.description AS description,
-                 e.imageBase64 AS imageBase64,
-                 e.dateTime AS dateTime,
-                 e.category AS category,
-                 e.location AS location,
-                 e.createdBy AS createdBy,
-                 e.status AS status",
+            @"MATCH (u:User {id: $userId})-[:CREATED|STAFF_FOR]->(e:Event)
+      RETURN DISTINCT
+             e.id AS id,
+             e.name AS name,
+             e.description AS description,
+             e.imageBase64 AS imageBase64,
+             e.dateTime AS dateTime,
+             e.category AS category,
+             e.location AS location,
+             e.createdBy AS createdBy,
+             e.status AS status",
             new { userId }
         );
 
@@ -598,6 +599,11 @@ public class ApplicationDbContext : IDisposable
     {
         await using var session = _driver.AsyncSession();
         var result = await session.RunAsync(
+            @"MATCH (u:User {emailConfirmationCode: $code}) 
+          SET u.isEmailConfirmed = $emailConfirmed",
+            new { emailConfirmed = true }
+        );
+        result = await session.RunAsync(
             @"MATCH (u:User {emailConfirmationCode: $code}) 
           RETURN u.id AS id, u.name AS name, u.email AS email, 
                  u.passwordHash AS passwordHash, u.canBeStaff AS canBeStaff,

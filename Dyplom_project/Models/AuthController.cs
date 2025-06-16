@@ -43,10 +43,10 @@ public class AuthController : ControllerBase
             return Unauthorized(new { message = "Неверный email или пароль." });
         }
 
-        if (!user.IsEmailConfirmed)
+        /*if (!user.IsEmailConfirmed)
         {
             return Unauthorized(new { message = "Email не подтверждён." });
-        }
+        }*/
 
         var token = _jwtService.GenerateToken(user);
         return Ok(new { token });
@@ -177,8 +177,9 @@ public class AuthController : ControllerBase
     [Authorize]
     public async Task<IActionResult> GetUserData()
     {
-        var userId = int.Parse(User.FindFirst("userId")?.Value!);
-        var user = await _dbContext.GetUserByIdAsync(userId);
+        var userIdClaim = User.FindFirst("userId");
+        var userId = userIdClaim?.Value;
+        var user = await _dbContext.GetUserByIdAsync(Convert.ToInt32(userId));
         if (user == null)
             return NotFound(new { message = "Пользователь не найден." });
 
@@ -196,8 +197,9 @@ public class AuthController : ControllerBase
     [Authorize]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
-        var userId = int.Parse(User.FindFirst("userId")?.Value!);
-        var user = await _dbContext.GetUserByIdAsync(userId);
+        var userIdClaim = User.FindFirst("userId");
+        var userId = userIdClaim?.Value;
+        var user = await _dbContext.GetUserByIdAsync(Convert.ToInt32(userId));
 
         if (user == null || !user.VerifyPassword(request.OldPassword))
             return BadRequest(new { message = "Неверный старый пароль." });
@@ -211,8 +213,10 @@ public class AuthController : ControllerBase
     [Authorize]
     public async Task<IActionResult> ChangeName([FromBody] ChangeNameRequest request)
     {
-        var userId = int.Parse(User.FindFirst("userId")?.Value!);
-        var user = await _dbContext.GetUserByIdAsync(userId);
+        var userIdClaim = User.FindFirst("userId");
+        var userId = userIdClaim?.Value;
+
+        var user = await _dbContext.GetUserByIdAsync(Convert.ToInt32(userId));
 
         if (user == null)
             return NotFound(new { message = "Пользователь не найден." });

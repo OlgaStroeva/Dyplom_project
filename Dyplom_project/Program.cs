@@ -9,6 +9,8 @@ var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new ArgumentNullException
 
 builder.Services.AddSingleton<ApplicationDbContext>();
 builder.Services.AddSingleton<JwtService>();
+builder.WebHost.UseUrls("http://[::]:7291");
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -82,10 +84,15 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
-app.UseCors(policy => policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+app.Urls.Add("http://[::]:7291");
+app.UseCors("AllowFrontend");
 app.UseRouting();
 app.UseHttpsRedirection();
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
